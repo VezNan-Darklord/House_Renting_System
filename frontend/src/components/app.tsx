@@ -1,6 +1,7 @@
-import { HomeOutlined, StarOutlined, BellOutlined, SearchOutlined, AppstoreOutlined, HeartOutlined, ShopOutlined, UserOutlined } from "@ant-design/icons"
+import { HomeOutlined, StarOutlined, BellOutlined, SearchOutlined, HeartOutlined } from "@ant-design/icons"
 import { Button, Badge, Input, Tooltip, Divider } from "antd"
 import { useState, useEffect } from "react"
+import Sidebar from "./sidebar"
 
 export default function App() {
     const [isSticky, setIsSticky] = useState(false)
@@ -17,7 +18,7 @@ export default function App() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-[#faf7f2] text-slate-900">
+        <div className="min-h-screen bg-[#faf7f2] text-slate-900 pt-5">
             <header className="border-b border-black/5 bg-white/80 backdrop-blur-xl">
                 <div className="mx-auto flex h-50 w-full max-w-400 items-center px-4 sm:px-6 lg:px-8">
                     <div className="flex w-full flex-col gap-6">
@@ -84,10 +85,6 @@ export default function App() {
                                 </div>
                             </div>
                         </div>
-
-                        <div className={`pt-1 text-sm text-slate-500 transition-opacity duration-300 ${isSticky ? 'opacity-0' : 'opacity-100'}`}>
-                            搜索框滚动后会吸顶固定，下面的首页内容保持继续浏览。
-                        </div>
                     </div>
                 </div>
             </header>
@@ -98,10 +95,6 @@ export default function App() {
                         <div>
                             <div className="text-sm font-medium uppercase tracking-[0.3em] text-orange-500">推荐板块</div>
                             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">为你整理的租房首页</h2>
-                        </div>
-                        <div className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
-                            <AppstoreOutlined />
-                            <span>响应式瀑布流布局</span>
                         </div>
                     </div>
 
@@ -158,87 +151,8 @@ export default function App() {
                         ))}
                     </div>
                 </section>
-
-                <section className="mb-10 rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_10px_40px_rgba(15,23,42,0.05)]">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <div className="text-sm font-medium uppercase tracking-[0.3em] text-slate-400">首页补充区</div>
-                            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">后续可继续扩展的功能模块位置</h2>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {['热门小区', '通勤优先', '预算优先', '新房推荐'].map((item) => (
-                                <Button key={item} shape="round" className="border-slate-200 text-slate-600 shadow-none">
-                                    {item}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5">
-                                <div className="mb-4 h-36 rounded-[20px] border border-dashed border-slate-300 bg-white" />
-                                <div className="h-4 w-2/3 rounded-full bg-slate-200" />
-                                <div className="mt-3 h-3 w-full rounded-full bg-slate-200/80" />
-                                <div className="mt-2 h-3 w-5/6 rounded-full bg-slate-200/80" />
-                                <div className="mt-4 flex items-center justify-between">
-                                    <div className="h-4 w-24 rounded-full bg-slate-200" />
-                                    <div className="h-9 w-24 rounded-full border border-slate-200 bg-white" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <footer className="rounded-4xl border border-slate-200 bg-slate-900 px-6 py-8 text-slate-100 shadow-[0_10px_40px_rgba(15,23,42,0.1)] sm:px-8">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
-                                    <ShopOutlined />
-                                </div>
-                                <div>
-                                    <div className="text-lg font-semibold">House Flow</div>
-                                    <div className="text-sm text-slate-400">前端首页占位壳，后续接入真实业务接口</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            {['房源', '租客', '房东', '管理'].map((item) => (
-                                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                                    {item}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </footer>
             </main>
-
-            <aside className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 xl:block">
-                <div className="flex w-20 flex-col items-center gap-2 rounded-[28px] border border-slate-200 bg-white/95 p-2 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-                    {[
-                        { icon: <UserOutlined />, label: '我的' },
-                        { icon: <HeartOutlined />, label: '收藏' },
-                        { icon: <BellOutlined />, label: '消息' },
-                        { icon: <StarOutlined />, label: '推荐' },
-                        { icon: <AppstoreOutlined />, label: '分类' },
-                    ].map((item) => (
-                        <Button
-                            key={item.label}
-                            type="text"
-                            className="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-[18px] px-0! text-slate-600 shadow-none hover:bg-orange-50! hover:text-orange-500!"
-                        >
-                            <span className="text-lg">{item.icon}</span>
-                            <span className="text-[11px] font-medium">{item.label}</span>
-                        </Button>
-                    ))}
-                    <Divider className="my-1! border-slate-200!" />
-                    <Button type="primary" shape="round" className="w-full bg-orange-500! shadow-none!">
-                        反馈
-                    </Button>
-                </div>
-            </aside>
+            <Sidebar />
         </div>
     )
 }
