@@ -37,6 +37,15 @@ app.include_router(contract_router)
 
 from routes.rent import router as rent_router
 app.include_router(rent_router)
+
+from routes.repair import router as repair_router
+app.include_router(repair_router)
+
+from routes.complaint import router as complaint_router
+app.include_router(complaint_router)
+
+from routes.admin import router as admin_router
+app.include_router(admin_router)
 @app.get("/")
 def root():
     return {
