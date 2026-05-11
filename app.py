@@ -28,6 +28,15 @@ app.include_router(user_router)
 
 from routes.house import router as house_router
 app.include_router(house_router)
+
+from routes.search import router as search_router
+app.include_router(search_router)
+
+from routes.contract import router as contract_router
+app.include_router(contract_router)
+
+from routes.rent import router as rent_router
+app.include_router(rent_router)
 @app.get("/")
 def root():
     return {
