@@ -1,0 +1,1025 @@
+{
+  "api_contract": {
+    "version": "1.0.0",
+    "description": "房屋租赁管理系统前后端交互契约",
+    "base_url": "/api/v1"
+  },
+
+  "common_types": {
+    "ApiResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "description": "业务状态码：200成功，4xx客户端错误，5xx服务端错误"
+        },
+        "message": {
+          "type": "string",
+          "description": "提示信息"
+        },
+        "data": {
+          "type": ["object", "array", "null"],
+          "description": "业务数据"
+        }
+      },
+      "required": ["code", "message"]
+    },
+
+    "PaginatedResponse": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "总条数"
+        },
+        "page": {
+          "type": "integer",
+          "description": "当前页码"
+        },
+        "page_size": {
+          "type": "integer",
+          "description": "每页条数"
+        },
+        "items": {
+          "type": "array",
+          "description": "当前页数据"
+        }
+      },
+      "required": ["total", "page", "page_size", "items"]
+    }
+  },
+
+  "enums": {
+    "UserRole": {
+      "type": "string",
+      "enum": ["landlord", "tenant", "admin"],
+      "descriptions": {
+        "landlord": "房东",
+        "tenant": "租客",
+        "admin": "管理员"
+      }
+    },
+
+    "HouseType": {
+      "type": "string",
+      "enum": ["apartment", "residential", "villa"],
+      "descriptions": {
+        "apartment": "公寓",
+        "residential": "住宅",
+        "villa": "别墅"
+      }
+    },
+
+    "DecorationType": {
+      "type": "string",
+      "enum": ["luxury", "simple", "rough"],
+      "descriptions": {
+        "luxury": "精装",
+        "simple": "简装",
+        "rough": "毛坯"
+      }
+    },
+
+    "HouseStatus": {
+      "type": "string",
+      "enum": ["vacant", "rented", "maintenance"],
+      "descriptions": {
+        "vacant": "空置",
+        "rented": "已出租",
+        "maintenance": "维护中"
+      }
+    },
+
+    "ContractStatus": {
+      "type": "string",
+      "enum": ["pending_landlord", "pending_tenant", "active", "terminated"],
+      "descriptions": {
+        "pending_landlord": "待房东确认",
+        "pending_tenant": "待租客确认",
+        "active": "生效中",
+        "terminated": "已终止"
+      }
+    },
+
+    "RentStatus": {
+      "type": "string",
+      "enum": ["unpaid", "paid"],
+      "descriptions": {
+        "unpaid": "未支付",
+        "paid": "已支付"
+      }
+    },
+
+    "UrgencyLevel": {
+      "type": "string",
+      "enum": ["normal", "urgent"],
+      "descriptions": {
+        "normal": "普通",
+        "urgent": "紧急"
+      }
+    },
+
+    "RepairStatus": {
+      "type": "string",
+      "enum": ["pending", "processing", "completed"],
+      "descriptions": {
+        "pending": "待处理",
+        "processing": "处理中",
+        "completed": "已完成"
+      }
+    },
+
+    "ComplaintType": {
+      "type": "string",
+      "enum": ["house", "landlord", "other"],
+      "descriptions": {
+        "house": "房屋问题",
+        "landlord": "房东问题",
+        "other": "其他"
+      }
+    },
+
+    "ComplaintStatus": {
+      "type": "string",
+      "enum": ["pending", "resolved"],
+      "descriptions": {
+        "pending": "待处理",
+        "resolved": "已解决"
+      }
+    }
+  },
+
+  "modules": {
+    "user": {
+      "name": "用户模块",
+      "endpoints": {
+        "register": {
+          "method": "POST",
+          "path": "/auth/register",
+          "description": "用户注册",
+          "request": {
+            "type": "object",
+            "properties": {
+              "role": {"$ref": "#/enums/UserRole"},
+              "email": {"type": "string", "format": "email"},
+              "password": {"type": "string", "minLength": 6, "maxLength": 50},
+              "nickname": {"type": "string", "minLength": 1, "maxLength": 50}
+            },
+            "required": ["role", "email", "password", "nickname"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "token": {"type": "string"},
+              "user": {"$ref": "#/modules/user/schemas/User"}
+            }
+          }
+        },
+
+        "login": {
+          "method": "POST",
+          "path": "/auth/login",
+          "description": "用户登录",
+          "request": {
+            "type": "object",
+            "properties": {
+              "email": {"type": "string", "format": "email"},
+              "password": {"type": "string"}
+            },
+            "required": ["email", "password"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "token": {"type": "string"},
+              "user": {"$ref": "#/modules/user/schemas/User"}
+            }
+          }
+        },
+
+        "get_profile": {
+          "method": "GET",
+          "path": "/user/profile",
+          "description": "获取个人信息",
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/user/schemas/User"}
+          }
+        },
+
+        "update_profile": {
+          "method": "PUT",
+          "path": "/user/profile",
+          "description": "更新个人信息",
+          "request": {
+            "type": "object",
+            "properties": {
+              "nickname": {"type": "string", "minLength": 1, "maxLength": 50},
+              "phone": {"type": "string", "maxLength": 20},
+              "avatar": {"type": "string"}
+            }
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/user/schemas/User"}
+          }
+        },
+
+        "change_password": {
+          "method": "POST",
+          "path": "/user/change-password",
+          "description": "修改密码",
+          "request": {
+            "type": "object",
+            "properties": {
+              "old_password": {"type": "string"},
+              "new_password": {"type": "string", "minLength": 6, "maxLength": 50}
+            },
+            "required": ["old_password", "new_password"]
+          },
+          "response": {"$ref": "#/common_types/ApiResponse"}
+        }
+      },
+
+      "schemas": {
+        "User": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "role": {"$ref": "#/enums/UserRole"},
+            "email": {"type": "string", "format": "email"},
+            "nickname": {"type": "string"},
+            "phone": {"type": "string", "default": ""},
+            "avatar": {"type": "string", "default": ""},
+            "is_active": {"type": "boolean", "default": true},
+            "created_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "RentalHistory": {
+          "type": "object",
+          "properties": {
+            "contract_id": {"type": "integer"},
+            "house_address": {"type": "string"},
+            "house_layout": {"type": "string"},
+            "start_date": {"type": "string"},
+            "end_date": {"type": "string"},
+            "monthly_rent": {"type": "number"},
+            "status": {"type": "string"}
+          }
+        }
+      }
+    },
+
+    "house": {
+      "name": "房源模块",
+      "endpoints": {
+        "create_house": {
+          "method": "POST",
+          "path": "/house",
+          "description": "发布房源",
+          "request": {"$ref": "#/modules/house/schemas/HouseRequest"},
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/house/schemas/House"}
+          }
+        },
+
+        "get_house_list": {
+          "method": "GET",
+          "path": "/house/list",
+          "description": "获取房源列表",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "status": {"$ref": "#/enums/HouseStatus"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/house/schemas/HouseListItem"}]
+            }
+          }
+        },
+
+        "get_house_detail": {
+          "method": "GET",
+          "path": "/house/{house_id}",
+          "description": "获取房源详情",
+          "path_params": {
+            "house_id": {"type": "integer"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/house/schemas/House"}
+          }
+        },
+
+        "update_house": {
+          "method": "PUT",
+          "path": "/house/{house_id}",
+          "description": "编辑房源",
+          "path_params": {
+            "house_id": {"type": "integer"}
+          },
+          "request": {"$ref": "#/modules/house/schemas/HouseRequest"},
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/house/schemas/House"}
+          }
+        },
+
+        "delete_house": {
+          "method": "DELETE",
+          "path": "/house/{house_id}",
+          "description": "删除房源",
+          "path_params": {
+            "house_id": {"type": "integer"}
+          },
+          "response": {"$ref": "#/common_types/ApiResponse"}
+        },
+
+        "update_house_status": {
+          "method": "PATCH",
+          "path": "/house/{house_id}/status",
+          "description": "更新房源状态",
+          "path_params": {
+            "house_id": {"type": "integer"}
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "status": {"$ref": "#/enums/HouseStatus"}
+            },
+            "required": ["status"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/house/schemas/House"}
+          }
+        },
+
+        "upload_images": {
+          "method": "POST",
+          "path": "/house/upload-images",
+          "description": "上传房源图片",
+          "content_type": "multipart/form-data",
+          "request": {
+            "type": "object",
+            "properties": {
+              "files": {
+                "type": "array",
+                "items": {"type": "string", "format": "binary"}
+              }
+            }
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "urls": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        }
+      },
+
+      "schemas": {
+        "House": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "landlord_id": {"type": "integer"},
+            "landlord_nickname": {"type": "string"},
+            "address_province": {"type": "string"},
+            "address_city": {"type": "string"},
+            "address_district": {"type": "string"},
+            "address_detail": {"type": "string"},
+            "house_type": {"$ref": "#/enums/HouseType"},
+            "layout": {"type": "string"},
+            "area": {"type": "number"},
+            "monthly_rent": {"type": "number"},
+            "deposit": {"type": "number"},
+            "decoration": {"$ref": "#/enums/DecorationType"},
+            "facilities": {"type": "array", "items": {"type": "string"}, "default": []},
+            "description": {"type": "string", "default": ""},
+            "images": {"type": "array", "items": {"type": "string"}, "default": []},
+            "status": {"$ref": "#/enums/HouseStatus"},
+            "is_deleted": {"type": "boolean", "default": false},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "HouseRequest": {
+          "type": "object",
+          "properties": {
+            "address_province": {"type": "string", "minLength": 1, "maxLength": 50},
+            "address_city": {"type": "string", "minLength": 1, "maxLength": 50},
+            "address_district": {"type": "string", "minLength": 1, "maxLength": 50},
+            "address_detail": {"type": "string", "minLength": 1, "maxLength": 255},
+            "house_type": {"$ref": "#/enums/HouseType"},
+            "layout": {"type": "string", "minLength": 1, "maxLength": 50},
+            "area": {"type": "number", "exclusiveMinimum": 0},
+            "monthly_rent": {"type": "number", "exclusiveMinimum": 0},
+            "deposit": {"type": "number", "minimum": 0},
+            "decoration": {"$ref": "#/enums/DecorationType"},
+            "facilities": {"type": "array", "items": {"type": "string"}, "default": []},
+            "description": {"type": "string", "default": ""}
+          },
+          "required": ["address_province", "address_city", "address_district", "address_detail", "house_type", "layout", "area", "monthly_rent", "deposit", "decoration"]
+        },
+
+        "HouseListItem": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "cover_image": {"type": "string", "default": ""},
+            "layout": {"type": "string"},
+            "address_summary": {"type": "string"},
+            "monthly_rent": {"type": "number"},
+            "area": {"type": "number"},
+            "status": {"$ref": "#/enums/HouseStatus"},
+            "status_label": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "search": {
+      "name": "搜索模块",
+      "endpoints": {
+        "search_houses": {
+          "method": "GET",
+          "path": "/search/houses",
+          "description": "搜索房源",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "keyword": {"type": "string"},
+            "layout": {"type": "string"},
+            "province": {"type": "string"},
+            "city": {"type": "string"},
+            "district": {"type": "string"},
+            "min_rent": {"type": "number", "minimum": 0},
+            "max_rent": {"type": "number", "minimum": 0},
+            "min_area": {"type": "number", "minimum": 0},
+            "max_area": {"type": "number", "minimum": 0},
+            "house_type": {"$ref": "#/enums/HouseType"},
+            "decoration": {"$ref": "#/enums/DecorationType"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/search/schemas/SearchResult"}
+          }
+        }
+      },
+
+      "schemas": {
+        "SearchResult": {
+          "type": "object",
+          "properties": {
+            "total": {"type": "integer"},
+            "items": {
+              "type": "array",
+              "items": {"$ref": "#/modules/house/schemas/HouseListItem"}
+            }
+          }
+        }
+      }
+    },
+
+    "chat": {
+      "name": "聊天模块",
+      "endpoints": {
+        "get_chat_rooms": {
+          "method": "GET",
+          "path": "/chat/rooms",
+          "description": "获取聊天室列表",
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "type": "array",
+              "items": {"$ref": "#/modules/chat/schemas/ChatRoom"}
+            }
+          }
+        },
+
+        "get_chat_history": {
+          "method": "GET",
+          "path": "/chat/rooms/{room_id}/messages",
+          "description": "获取历史消息",
+          "path_params": {
+            "room_id": {"type": "integer"}
+          },
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/chat/schemas/ChatHistoryResponse"}
+          }
+        }
+      },
+
+      "websocket": {
+        "url": "ws://localhost/ws",
+        "description": "WebSocket实时通信",
+        "events": {
+          "join_room": {
+            "direction": "client_to_server",
+            "payload": {
+              "room_id": {"type": "integer"}
+            }
+          },
+          "send_message": {
+            "direction": "client_to_server",
+            "payload": {
+              "room_id": {"type": "integer"},
+              "content": {"type": "string"}
+            }
+          },
+          "receive_message": {
+            "direction": "server_to_client",
+            "payload": {
+              "room_id": {"type": "integer"},
+              "message": {"$ref": "#/modules/chat/schemas/ChatMessage"}
+            }
+          }
+        }
+      },
+
+      "schemas": {
+        "ChatRoom": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "house_id": {"type": "integer"},
+            "house_info": {"type": "string"},
+            "tenant_id": {"type": "integer"},
+            "landlord_id": {"type": "integer"},
+            "other_user_nickname": {"type": "string"},
+            "last_message": {"type": "string"},
+            "last_message_time": {"type": "string", "format": "date-time"},
+            "created_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "ChatMessage": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "room_id": {"type": "integer"},
+            "sender_id": {"type": "integer"},
+            "sender_nickname": {"type": "string"},
+            "content": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "ChatHistoryResponse": {
+          "type": "object",
+          "properties": {
+            "room_id": {"type": "integer"},
+            "messages": {
+              "type": "array",
+              "items": {"$ref": "#/modules/chat/schemas/ChatMessage"}
+            },
+            "total": {"type": "integer"},
+            "page": {"type": "integer"},
+            "page_size": {"type": "integer"}
+          }
+        }
+      }
+    },
+
+    "contract": {
+      "name": "合同模块",
+      "endpoints": {
+        "create_contract": {
+          "method": "POST",
+          "path": "/contract",
+          "description": "发起租赁请求",
+          "request": {
+            "type": "object",
+            "properties": {
+              "house_id": {"type": "integer"}
+            },
+            "required": ["house_id"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/contract/schemas/Contract"}
+          }
+        },
+
+        "get_contracts": {
+          "method": "GET",
+          "path": "/contract/list",
+          "description": "获取合同列表",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "status": {"$ref": "#/enums/ContractStatus"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/contract/schemas/Contract"}]
+            }
+          }
+        },
+
+        "get_contract_detail": {
+          "method": "GET",
+          "path": "/contract/{contract_id}",
+          "description": "获取合同详情",
+          "path_params": {
+            "contract_id": {"type": "integer"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/contract/schemas/Contract"}
+          }
+        },
+
+        "confirm_contract": {
+          "method": "POST",
+          "path": "/contract/confirm",
+          "description": "确认合同",
+          "request": {
+            "type": "object",
+            "properties": {
+              "contract_id": {"type": "integer"}
+            },
+            "required": ["contract_id"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/contract/schemas/Contract"}
+          }
+        },
+
+        "terminate_contract": {
+          "method": "POST",
+          "path": "/contract/{contract_id}/terminate",
+          "description": "终止合同",
+          "path_params": {
+            "contract_id": {"type": "integer"}
+          },
+          "response": {"$ref": "#/common_types/ApiResponse"}
+        }
+      },
+
+      "schemas": {
+        "Contract": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "house_id": {"type": "integer"},
+            "tenant_id": {"type": "integer"},
+            "landlord_id": {"type": "integer"},
+            "house_address": {"type": "string"},
+            "house_layout": {"type": "string"},
+            "house_area": {"type": "number"},
+            "tenant_nickname": {"type": "string"},
+            "tenant_phone": {"type": "string"},
+            "landlord_nickname": {"type": "string"},
+            "landlord_phone": {"type": "string"},
+            "start_date": {"type": "string"},
+            "end_date": {"type": "string"},
+            "monthly_rent": {"type": "number"},
+            "deposit": {"type": "number"},
+            "terms": {"type": "string"},
+            "status": {"$ref": "#/enums/ContractStatus"},
+            "status_label": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "rent": {
+      "name": "租金模块",
+      "endpoints": {
+        "get_rent_records": {
+          "method": "GET",
+          "path": "/rent/records",
+          "description": "获取租金记录列表",
+          "query_params": {
+            "contract_id": {"type": "integer"},
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/rent/schemas/RentRecord"}]
+            }
+          }
+        },
+
+        "confirm_payment": {
+          "method": "POST",
+          "path": "/rent/confirm-payment",
+          "description": "确认付款",
+          "request": {
+            "type": "object",
+            "properties": {
+              "rent_id": {"type": "integer"}
+            },
+            "required": ["rent_id"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/rent/schemas/RentRecord"}
+          }
+        },
+
+        "remind_payment": {
+          "method": "POST",
+          "path": "/rent/remind",
+          "description": "提醒付款",
+          "request": {
+            "type": "object",
+            "properties": {
+              "rent_id": {"type": "integer"}
+            },
+            "required": ["rent_id"]
+          },
+          "response": {"$ref": "#/common_types/ApiResponse"}
+        }
+      },
+
+      "schemas": {
+        "RentRecord": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "contract_id": {"type": "integer"},
+            "month": {"type": "string"},
+            "amount": {"type": "number"},
+            "status": {"$ref": "#/enums/RentStatus"},
+            "status_label": {"type": "string"},
+            "paid_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "repair": {
+      "name": "维修模块",
+      "endpoints": {
+        "create_repair": {
+          "method": "POST",
+          "path": "/repair",
+          "description": "提交维修申请",
+          "request": {"$ref": "#/modules/repair/schemas/RepairRequest"},
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/repair/schemas/RepairRecord"}
+          }
+        },
+
+        "get_repair_list": {
+          "method": "GET",
+          "path": "/repair/list",
+          "description": "获取维修工单列表",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "status": {"$ref": "#/enums/RepairStatus"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/repair/schemas/RepairRecord"}]
+            }
+          }
+        },
+
+        "get_repair_detail": {
+          "method": "GET",
+          "path": "/repair/{repair_id}",
+          "description": "获取维修工单详情",
+          "path_params": {
+            "repair_id": {"type": "integer"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/repair/schemas/RepairRecord"}
+          }
+        },
+
+        "update_repair_status": {
+          "method": "PATCH",
+          "path": "/repair/{repair_id}/status",
+          "description": "更新维修状态",
+          "path_params": {
+            "repair_id": {"type": "integer"}
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "status": {"$ref": "#/enums/RepairStatus"}
+            },
+            "required": ["status"]
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/repair/schemas/RepairRecord"}
+          }
+        }
+      },
+
+      "schemas": {
+        "RepairRequest": {
+          "type": "object",
+          "properties": {
+            "house_id": {"type": "integer"},
+            "description": {"type": "string", "minLength": 1, "maxLength": 1000},
+            "urgency": {"$ref": "#/enums/UrgencyLevel", "default": "normal"}
+          },
+          "required": ["house_id", "description"]
+        },
+
+        "RepairRecord": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "house_id": {"type": "integer"},
+            "house_address": {"type": "string"},
+            "tenant_id": {"type": "integer"},
+            "tenant_nickname": {"type": "string"},
+            "description": {"type": "string"},
+            "urgency": {"$ref": "#/enums/UrgencyLevel"},
+            "urgency_label": {"type": "string"},
+            "status": {"$ref": "#/enums/RepairStatus"},
+            "status_label": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "complaint": {
+      "name": "投诉模块",
+      "endpoints": {
+        "create_complaint": {
+          "method": "POST",
+          "path": "/complaint",
+          "description": "提交投诉",
+          "request": {"$ref": "#/modules/complaint/schemas/ComplaintRequest"},
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/complaint/schemas/ComplaintRecord"}
+          }
+        },
+
+        "get_complaint_list": {
+          "method": "GET",
+          "path": "/complaint/list",
+          "description": "获取投诉列表",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "status": {"$ref": "#/enums/ComplaintStatus"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/complaint/schemas/ComplaintRecord"}]
+            }
+          }
+        },
+
+        "handle_complaint": {
+          "method": "POST",
+          "path": "/complaint/handle",
+          "description": "处理投诉（管理员）",
+          "request": {"$ref": "#/modules/complaint/schemas/HandleComplaintRequest"},
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {"$ref": "#/modules/complaint/schemas/ComplaintRecord"}
+          }
+        }
+      },
+
+      "schemas": {
+        "ComplaintRequest": {
+          "type": "object",
+          "properties": {
+            "type": {"$ref": "#/enums/ComplaintType"},
+            "content": {"type": "string", "minLength": 1, "maxLength": 2000}
+          },
+          "required": ["type", "content"]
+        },
+
+        "ComplaintRecord": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "tenant_id": {"type": "integer"},
+            "tenant_nickname": {"type": "string"},
+            "type": {"$ref": "#/enums/ComplaintType"},
+            "type_label": {"type": "string"},
+            "content": {"type": "string"},
+            "status": {"$ref": "#/enums/ComplaintStatus"},
+            "status_label": {"type": "string"},
+            "admin_feedback": {"type": "string", "default": ""},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "HandleComplaintRequest": {
+          "type": "object",
+          "properties": {
+            "complaint_id": {"type": "integer"},
+            "feedback": {"type": "string", "minLength": 1, "maxLength": 2000}
+          },
+          "required": ["complaint_id", "feedback"]
+        }
+      }
+    },
+
+    "admin": {
+      "name": "管理模块",
+      "endpoints": {
+        "get_users": {
+          "method": "GET",
+          "path": "/admin/users",
+          "description": "获取用户列表（管理员）",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "role": {"$ref": "#/enums/UserRole"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/user/schemas/User"}]
+            }
+          }
+        },
+
+        "reset_password": {
+          "method": "POST",
+          "path": "/admin/reset-password",
+          "description": "重置用户密码（管理员）",
+          "request": {
+            "type": "object",
+            "properties": {
+              "user_id": {"type": "integer"},
+              "new_password": {"type": "string", "minLength": 6, "maxLength": 50}
+            },
+            "required": ["user_id", "new_password"]
+          },
+          "response": {"$ref": "#/common_types/ApiResponse"}
+        },
+
+        "get_logs": {
+          "method": "GET",
+          "path": "/admin/logs",
+          "description": "查询系统日志（管理员）",
+          "query_params": {
+            "page": {"type": "integer", "minimum": 1},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
+            "start_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date"},
+            "user_id": {"type": "integer"}
+          },
+          "response": {
+            "$ref": "#/common_types/ApiResponse",
+            "data": {
+              "$ref": "#/common_types/PaginatedResponse",
+              "items": [{"$ref": "#/modules/admin/schemas/LogRecord"}]
+            }
+          }
+        }
+      },
+
+      "schemas": {
+        "LogRecord": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "user_id": {"type": "integer"},
+            "user_nickname": {"type": "string", "default": ""},
+            "action": {"type": "string"},
+            "ip_address": {"type": "string", "default": ""},
+            "created_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    }
+  }
+}
