@@ -1,0 +1,1698 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "房屋租赁管理系统 API",
+    "version": "1.0.0",
+    "description": "房屋租赁管理系统前后端交互契约"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["user"],
+        "summary": "用户注册",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "token": { "type": "string" },
+                            "user": { "$ref": "#/components/schemas/User" }
+                          },
+                          "required": ["token", "user"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["user"],
+        "summary": "用户登录",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "token": { "type": "string" },
+                            "user": { "$ref": "#/components/schemas/User" }
+                          },
+                          "required": ["token", "user"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/profile": {
+      "get": {
+        "tags": ["user"],
+        "summary": "获取个人信息",
+        "operationId": "get_profile",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["user"],
+        "summary": "更新个人信息",
+        "operationId": "update_profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/change-password": {
+      "post": {
+        "tags": ["user"],
+        "summary": "修改密码",
+        "operationId": "change_password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/house": {
+      "post": {
+        "tags": ["house"],
+        "summary": "发布房源",
+        "operationId": "create_house",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/House" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/house/list": {
+      "get": {
+        "tags": ["house"],
+        "summary": "获取房源列表",
+        "operationId": "get_house_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/HouseStatus" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/HouseListItem" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/house/{house_id}": {
+      "get": {
+        "tags": ["house"],
+        "summary": "获取房源详情",
+        "operationId": "get_house_detail",
+        "parameters": [
+          { "name": "house_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/House" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["house"],
+        "summary": "编辑房源",
+        "operationId": "update_house",
+        "parameters": [
+          { "name": "house_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/House" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["house"],
+        "summary": "删除房源",
+        "operationId": "delete_house",
+        "parameters": [
+          { "name": "house_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/house/{house_id}/status": {
+      "patch": {
+        "tags": ["house"],
+        "summary": "更新房源状态",
+        "operationId": "update_house_status",
+        "parameters": [
+          { "name": "house_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHouseStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/House" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/house/upload-images": {
+      "post": {
+        "tags": ["house"],
+        "summary": "上传房源图片",
+        "operationId": "upload_images",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadHouseImagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "urls": {
+                              "type": "array",
+                              "items": { "type": "string" }
+                            }
+                          },
+                          "required": ["urls"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/houses": {
+      "get": {
+        "tags": ["search"],
+        "summary": "搜索房源",
+        "operationId": "search_houses",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
+          { "name": "layout", "in": "query", "schema": { "type": "string" } },
+          { "name": "province", "in": "query", "schema": { "type": "string" } },
+          { "name": "city", "in": "query", "schema": { "type": "string" } },
+          { "name": "district", "in": "query", "schema": { "type": "string" } },
+          { "name": "min_rent", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "max_rent", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "min_area", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "max_area", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "house_type", "in": "query", "schema": { "$ref": "#/components/schemas/HouseType" } },
+          { "name": "decoration", "in": "query", "schema": { "$ref": "#/components/schemas/DecorationType" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/SearchResult" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/rooms": {
+      "get": {
+        "tags": ["chat"],
+        "summary": "获取聊天室列表",
+        "operationId": "get_chat_rooms",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/ChatRoom" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/rooms/{room_id}/messages": {
+      "get": {
+        "tags": ["chat"],
+        "summary": "获取历史消息",
+        "operationId": "get_chat_history",
+        "parameters": [
+          { "name": "room_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/ChatHistoryResponse" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contract": {
+      "post": {
+        "tags": ["contract"],
+        "summary": "发起租赁请求",
+        "operationId": "create_contract",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Contract" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contract/list": {
+      "get": {
+        "tags": ["contract"],
+        "summary": "获取合同列表",
+        "operationId": "get_contracts",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/ContractStatus" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/Contract" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contract/{contract_id}": {
+      "get": {
+        "tags": ["contract"],
+        "summary": "获取合同详情",
+        "operationId": "get_contract_detail",
+        "parameters": [
+          { "name": "contract_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Contract" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contract/confirm": {
+      "post": {
+        "tags": ["contract"],
+        "summary": "确认合同",
+        "operationId": "confirm_contract",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmContractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Contract" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contract/{contract_id}/terminate": {
+      "post": {
+        "tags": ["contract"],
+        "summary": "终止合同",
+        "operationId": "terminate_contract",
+        "parameters": [
+          { "name": "contract_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rent/records": {
+      "get": {
+        "tags": ["rent"],
+        "summary": "获取租金记录列表",
+        "operationId": "get_rent_records",
+        "parameters": [
+          { "name": "contract_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/RentRecord" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rent/confirm-payment": {
+      "post": {
+        "tags": ["rent"],
+        "summary": "确认付款",
+        "operationId": "confirm_payment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/RentRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rent/remind": {
+      "post": {
+        "tags": ["rent"],
+        "summary": "提醒付款",
+        "operationId": "remind_payment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemindPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repair": {
+      "post": {
+        "tags": ["repair"],
+        "summary": "提交维修申请",
+        "operationId": "create_repair",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepairRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/RepairRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repair/list": {
+      "get": {
+        "tags": ["repair"],
+        "summary": "获取维修工单列表",
+        "operationId": "get_repair_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/RepairStatus" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/RepairRecord" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repair/{repair_id}": {
+      "get": {
+        "tags": ["repair"],
+        "summary": "获取维修工单详情",
+        "operationId": "get_repair_detail",
+        "parameters": [
+          { "name": "repair_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/RepairRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repair/{repair_id}/status": {
+      "patch": {
+        "tags": ["repair"],
+        "summary": "更新维修状态",
+        "operationId": "update_repair_status",
+        "parameters": [
+          { "name": "repair_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRepairStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/RepairRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/complaint": {
+      "post": {
+        "tags": ["complaint"],
+        "summary": "提交投诉",
+        "operationId": "create_complaint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplaintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/ComplaintRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/complaint/list": {
+      "get": {
+        "tags": ["complaint"],
+        "summary": "获取投诉列表",
+        "operationId": "get_complaint_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/ComplaintStatus" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/ComplaintRecord" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/complaint/handle": {
+      "post": {
+        "tags": ["complaint"],
+        "summary": "处理投诉（管理员）",
+        "operationId": "handle_complaint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandleComplaintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/ComplaintRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "获取用户列表（管理员）",
+        "operationId": "get_users",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "role", "in": "query", "schema": { "$ref": "#/components/schemas/UserRole" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/User" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reset-password": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "重置用户密码（管理员）",
+        "operationId": "reset_password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/logs": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "查询系统日志（管理员）",
+        "operationId": "get_logs",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "user_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/PaginatedResponse" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/LogRecord" }
+                                }
+                              },
+                              "required": ["items"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "业务状态码：200成功，4xx客户端错误，5xx服务端错误"
+          },
+          "message": {
+            "type": "string",
+            "description": "提示信息"
+          },
+          "data": {
+            "description": "业务数据",
+            "nullable": true,
+            "oneOf": [
+              { "type": "object", "additionalProperties": true },
+              { "type": "array", "items": {} }
+            ]
+          }
+        },
+        "required": ["code", "message"]
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "总条数"
+          },
+          "page": {
+            "type": "integer",
+            "description": "当前页码"
+          },
+          "page_size": {
+            "type": "integer",
+            "description": "每页条数"
+          },
+          "items": {
+            "type": "array",
+            "description": "当前页数据",
+            "items": {}
+          }
+        },
+        "required": ["total", "page", "page_size", "items"]
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["landlord", "tenant", "admin"],
+        "description": "用户角色"
+      },
+      "HouseType": {
+        "type": "string",
+        "enum": ["apartment", "residential", "villa"],
+        "description": "房屋类型"
+      },
+      "DecorationType": {
+        "type": "string",
+        "enum": ["luxury", "simple", "rough"],
+        "description": "装修类型"
+      },
+      "HouseStatus": {
+        "type": "string",
+        "enum": ["vacant", "rented", "maintenance"],
+        "description": "房源状态"
+      },
+      "ContractStatus": {
+        "type": "string",
+        "enum": ["pending_landlord", "pending_tenant", "active", "terminated"],
+        "description": "合同状态"
+      },
+      "RentStatus": {
+        "type": "string",
+        "enum": ["unpaid", "paid"],
+        "description": "租金状态"
+      },
+      "UrgencyLevel": {
+        "type": "string",
+        "enum": ["normal", "urgent"],
+        "description": "紧急程度"
+      },
+      "RepairStatus": {
+        "type": "string",
+        "enum": ["pending", "processing", "completed"],
+        "description": "维修状态"
+      },
+      "ComplaintType": {
+        "type": "string",
+        "enum": ["house", "landlord", "other"],
+        "description": "投诉类型"
+      },
+      "ComplaintStatus": {
+        "type": "string",
+        "enum": ["pending", "resolved"],
+        "description": "投诉状态"
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6, "maxLength": 50 },
+          "nickname": { "type": "string", "minLength": 1, "maxLength": 50 }
+        },
+        "required": ["role", "email", "password", "nickname"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        },
+        "required": ["email", "password"]
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "nickname": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "phone": { "type": "string", "maxLength": 20 },
+          "avatar": { "type": "string" }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "old_password": { "type": "string" },
+          "new_password": { "type": "string", "minLength": 6, "maxLength": 50 }
+        },
+        "required": ["old_password", "new_password"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "email": { "type": "string", "format": "email" },
+          "nickname": { "type": "string" },
+          "phone": { "type": "string", "default": "" },
+          "avatar": { "type": "string", "default": "" },
+          "is_active": { "type": "boolean", "default": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RentalHistory": {
+        "type": "object",
+        "properties": {
+          "contract_id": { "type": "integer" },
+          "house_address": { "type": "string" },
+          "house_layout": { "type": "string" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" },
+          "monthly_rent": { "type": "number" },
+          "status": { "type": "string" }
+        }
+      },
+      "House": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "landlord_id": { "type": "integer" },
+          "landlord_nickname": { "type": "string" },
+          "address_province": { "type": "string" },
+          "address_city": { "type": "string" },
+          "address_district": { "type": "string" },
+          "address_detail": { "type": "string" },
+          "house_type": { "$ref": "#/components/schemas/HouseType" },
+          "layout": { "type": "string" },
+          "area": { "type": "number" },
+          "monthly_rent": { "type": "number" },
+          "deposit": { "type": "number" },
+          "decoration": { "$ref": "#/components/schemas/DecorationType" },
+          "facilities": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "description": { "type": "string", "default": "" },
+          "images": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "status": { "$ref": "#/components/schemas/HouseStatus" },
+          "is_deleted": { "type": "boolean", "default": false },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HouseRequest": {
+        "type": "object",
+        "properties": {
+          "address_province": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "address_city": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "address_district": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "address_detail": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "house_type": { "$ref": "#/components/schemas/HouseType" },
+          "layout": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "area": { "type": "number", "minimum": 0, "exclusiveMinimum": true },
+          "monthly_rent": { "type": "number", "minimum": 0, "exclusiveMinimum": true },
+          "deposit": { "type": "number", "minimum": 0 },
+          "decoration": { "$ref": "#/components/schemas/DecorationType" },
+          "facilities": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "description": { "type": "string", "default": "" }
+        },
+        "required": [
+          "address_province",
+          "address_city",
+          "address_district",
+          "address_detail",
+          "house_type",
+          "layout",
+          "area",
+          "monthly_rent",
+          "deposit",
+          "decoration"
+        ]
+      },
+      "UpdateHouseStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/HouseStatus" }
+        },
+        "required": ["status"]
+      },
+      "UploadHouseImagesRequest": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": { "type": "string", "format": "binary" }
+          }
+        }
+      },
+      "HouseListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "cover_image": { "type": "string", "default": "" },
+          "layout": { "type": "string" },
+          "address_summary": { "type": "string" },
+          "monthly_rent": { "type": "number" },
+          "area": { "type": "number" },
+          "status": { "$ref": "#/components/schemas/HouseStatus" },
+          "status_label": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/HouseListItem" }
+          }
+        }
+      },
+      "ChatRoom": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "house_id": { "type": "integer" },
+          "house_info": { "type": "string" },
+          "tenant_id": { "type": "integer" },
+          "landlord_id": { "type": "integer" },
+          "other_user_nickname": { "type": "string" },
+          "last_message": { "type": "string" },
+          "last_message_time": { "type": "string", "format": "date-time" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "room_id": { "type": "integer" },
+          "sender_id": { "type": "integer" },
+          "sender_nickname": { "type": "string" },
+          "content": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ChatHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "room_id": { "type": "integer" },
+          "messages": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChatMessage" }
+          },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "page_size": { "type": "integer" }
+        }
+      },
+      "CreateContractRequest": {
+        "type": "object",
+        "properties": {
+          "house_id": { "type": "integer" }
+        },
+        "required": ["house_id"]
+      },
+      "ConfirmContractRequest": {
+        "type": "object",
+        "properties": {
+          "contract_id": { "type": "integer" }
+        },
+        "required": ["contract_id"]
+      },
+      "Contract": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "house_id": { "type": "integer" },
+          "tenant_id": { "type": "integer" },
+          "landlord_id": { "type": "integer" },
+          "house_address": { "type": "string" },
+          "house_layout": { "type": "string" },
+          "house_area": { "type": "number" },
+          "tenant_nickname": { "type": "string" },
+          "tenant_phone": { "type": "string" },
+          "landlord_nickname": { "type": "string" },
+          "landlord_phone": { "type": "string" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" },
+          "monthly_rent": { "type": "number" },
+          "deposit": { "type": "number" },
+          "terms": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/ContractStatus" },
+          "status_label": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RentRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "contract_id": { "type": "integer" },
+          "month": { "type": "string" },
+          "amount": { "type": "number" },
+          "status": { "$ref": "#/components/schemas/RentStatus" },
+          "status_label": { "type": "string" },
+          "paid_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ConfirmPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "rent_id": { "type": "integer" }
+        },
+        "required": ["rent_id"]
+      },
+      "RemindPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "rent_id": { "type": "integer" }
+        },
+        "required": ["rent_id"]
+      },
+      "RepairRequest": {
+        "type": "object",
+        "properties": {
+          "house_id": { "type": "integer" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "urgency": { "$ref": "#/components/schemas/UrgencyLevel", "default": "normal" }
+        },
+        "required": ["house_id", "description"]
+      },
+      "UpdateRepairStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/RepairStatus" }
+        },
+        "required": ["status"]
+      },
+      "RepairRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "house_id": { "type": "integer" },
+          "house_address": { "type": "string" },
+          "tenant_id": { "type": "integer" },
+          "tenant_nickname": { "type": "string" },
+          "description": { "type": "string" },
+          "urgency": { "$ref": "#/components/schemas/UrgencyLevel" },
+          "urgency_label": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/RepairStatus" },
+          "status_label": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ComplaintRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/ComplaintType" },
+          "content": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        },
+        "required": ["type", "content"]
+      },
+      "ComplaintRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tenant_id": { "type": "integer" },
+          "tenant_nickname": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/ComplaintType" },
+          "type_label": { "type": "string" },
+          "content": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/ComplaintStatus" },
+          "status_label": { "type": "string" },
+          "admin_feedback": { "type": "string", "default": "" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HandleComplaintRequest": {
+        "type": "object",
+        "properties": {
+          "complaint_id": { "type": "integer" },
+          "feedback": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        },
+        "required": ["complaint_id", "feedback"]
+      },
+      "AdminResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "new_password": { "type": "string", "minLength": 6, "maxLength": 50 }
+        },
+        "required": ["user_id", "new_password"]
+      },
+      "LogRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "user_nickname": { "type": "string", "default": "" },
+          "action": { "type": "string" },
+          "ip_address": { "type": "string", "default": "" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "x-websocket": {
+    "url": "ws://localhost/ws",
+    "description": "WebSocket实时通信",
+    "events": {
+      "join_room": {
+        "direction": "client_to_server",
+        "payload": { "room_id": { "type": "integer" } }
+      },
+      "send_message": {
+        "direction": "client_to_server",
+        "payload": {
+          "room_id": { "type": "integer" },
+          "content": { "type": "string" }
+        }
+      },
+      "receive_message": {
+        "direction": "server_to_client",
+        "payload": {
+          "room_id": { "type": "integer" },
+          "message": { "$ref": "#/components/schemas/ChatMessage" }
+        }
+      }
+    }
+  }
+}
