@@ -126,7 +126,7 @@ class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str = Field(min_length=6, max_length=50)
 
-class ResetPasswordRequest(BaseModel):
+class AdminResetPasswordRequest(BaseModel):
     """管理员重置密码请求"""
     user_id: int
     new_password: str = Field(min_length=6, max_length=50)
@@ -316,8 +316,8 @@ class ConfirmPaymentRequest(BaseModel):
     """确认付款请求"""
     rent_id: int
 
-class RemindRequest(BaseModel):
-    """房东提醒请求"""
+class RemindPaymentRequest(BaseModel):
+    """提醒付款请求"""
     rent_id: int
 
 # ==================== 维修模块 ====================

@@ -8,7 +8,10 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="智能房屋租赁系统 API",
     description="前后端分离的租赁平台后端",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/api/v1",
+    redoc_url=None,
+    openapi_url="/api/v1/openapi.json"
 )
 
 # 配置 CORS
@@ -32,6 +35,9 @@ app.include_router(house_router)
 from routes.search import router as search_router
 app.include_router(search_router)
 
+from routes.chat import router as chat_router
+app.include_router(chat_router)
+
 from routes.contract import router as contract_router
 app.include_router(contract_router)
 
@@ -46,12 +52,13 @@ app.include_router(complaint_router)
 
 from routes.admin import router as admin_router
 app.include_router(admin_router)
+
 @app.get("/")
 def root():
     return {
         "message": "智能房屋租赁系统 API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/api/v1/docs"
     }
 
 @app.get("/api/health")

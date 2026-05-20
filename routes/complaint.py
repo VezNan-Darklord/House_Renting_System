@@ -1,21 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Optional
 from models.database import get_db
 from models.schemas import (
     ComplaintRequest,
     ComplaintRecord,
-    HandleComplaintRequest
+    HandleComplaintRequest,
+    PaginatedResponse,
+    ApiResponse
 )
 from models.user_model import UserModel
 from models.complaint_model import ComplaintModel
 from utils.auth import get_current_user, get_current_tenant, get_current_admin
 from datetime import datetime
 
-router = APIRouter(prefix="/api/complaints", tags=["投诉"])
+router = APIRouter(prefix="/api/v1", tags=["投诉"])
 
 
-@router.post("", summary="提交投诉", status_code=status.HTTP_201_CREATED)
+@router.post("/complaint", summary="提交投诉", status_code=status.HTTP_201_CREATED)
 def create_complaint(
         request: ComplaintRequest,
         current_user: UserModel = Depends(get_current_tenant),
@@ -35,60 +37,61 @@ def create_complaint(
     db.commit()
     db.refresh(new_complaint)
 
-    return {
-        "code": 200,
-        "message": "投诉已提交，等待管理员处理",
-        "data": {"complaint_id": new_complaint.id}
-    }
+    tenant = db.query(UserModel).filter(UserModel.id == new_complaint.tenant_id).first()
+
+    complaint_data = ComplaintRecord(
+        id=new_complaint.id,
+        tenant_id=new_complaint.tenant_id,
+        tenant_nickname=tenant.nickname if tenant else "",
+        type=new_complaint.type,
+        type_label=get_type_label(new_complaint.type),
+        content=new_complaint.content,
+        status=new_complaint.status,
+        status_label="待处理" if new_complaint.status == 'pending' else "已处理",
+        admin_feedback=new_complaint.admin_feedback or "",
+        created_at=new_complaint.created_at,
+        updated_at=new_complaint.updated_at
+    )
+
+    return ApiResponse(
+        code=200,
+        message="投诉已提交，等待管理员处理",
+        data=complaint_data.dict()
+    )
 
 
-@router.get("/my", summary="我的投诉记录")
-def get_my_complaints(
-        current_user: UserModel = Depends(get_current_tenant),
+@router.get("/complaint/list", summary="获取投诉列表")
+def get_complaint_list(
+        page: int = 1,
+        page_size: int = 10,
+        status: Optional[str] = None,
+        current_user: UserModel = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    """租客查看自己提交的投诉"""
-    complaints = db.query(ComplaintModel).filter(
-        ComplaintModel.tenant_id == current_user.id
-    ).order_by(ComplaintModel.created_at.desc()).all()
+    """获取投诉列表"""
+    offset = (page - 1) * page_size
 
-    result = []
-    for complaint in complaints:
-        tenant = db.query(UserModel).filter(UserModel.id == complaint.tenant_id).first()
+    if current_user.role == 'tenant':
+        query = db.query(ComplaintModel).filter(ComplaintModel.tenant_id == current_user.id)
+    elif current_user.role == 'admin':
+        query = db.query(ComplaintModel)
+    else:
+        raise HTTPException(status_code=403, detail="房东无投诉功能")
 
-        result.append(ComplaintRecord(
-            id=complaint.id,
-            tenant_id=complaint.tenant_id,
-            tenant_nickname=tenant.nickname if tenant else "",
-            type=complaint.type,
-            type_label=get_type_label(complaint.type),
-            content=complaint.content,
-            status=complaint.status,
-            status_label="待处理" if complaint.status == 'pending' else "已处理",
-            admin_feedback=complaint.admin_feedback or "",
-            created_at=complaint.created_at,
-            updated_at=complaint.updated_at
-        ))
+    if status:
+        query = query.filter(ComplaintModel.status == status)
 
-    return result
-
-
-@router.get("", summary="所有投诉列表（管理员）")
-def get_all_complaints(
-        current_user: UserModel = Depends(get_current_admin),
-        db: Session = Depends(get_db)
-):
-    """管理员查看所有投诉"""
-    complaints = db.query(ComplaintModel).order_by(
-        ComplaintModel.status.asc(),  # 待处理的排前面
+    total = query.count()
+    complaints = query.order_by(
+        ComplaintModel.status.asc(),
         ComplaintModel.created_at.desc()
-    ).all()
+    ).offset(offset).limit(page_size).all()
 
-    result = []
+    items = []
     for complaint in complaints:
         tenant = db.query(UserModel).filter(UserModel.id == complaint.tenant_id).first()
 
-        result.append(ComplaintRecord(
+        items.append(ComplaintRecord(
             id=complaint.id,
             tenant_id=complaint.tenant_id,
             tenant_nickname=tenant.nickname if tenant else "",
@@ -102,19 +105,27 @@ def get_all_complaints(
             updated_at=complaint.updated_at
         ))
 
-    return result
+    return ApiResponse(
+        code=200,
+        message="成功",
+        data={
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "items": [item.dict() for item in items]
+        }
+    )
 
 
-@router.put("/{complaint_id}/handle", summary="处理投诉（管理员）")
+@router.post("/complaint/handle", summary="处理投诉（管理员）")
 def handle_complaint(
-        complaint_id: int,
         request: HandleComplaintRequest,
         current_user: UserModel = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     """管理员处理投诉并填写反馈"""
     complaint = db.query(ComplaintModel).filter(
-        ComplaintModel.id == complaint_id
+        ComplaintModel.id == request.complaint_id
     ).first()
 
     if not complaint:
@@ -124,8 +135,29 @@ def handle_complaint(
     complaint.admin_feedback = request.feedback
     complaint.updated_at = datetime.utcnow()
     db.commit()
+    db.refresh(complaint)
 
-    return {"code": 200, "message": "投诉处理完成"}
+    tenant = db.query(UserModel).filter(UserModel.id == complaint.tenant_id).first()
+
+    complaint_data = ComplaintRecord(
+        id=complaint.id,
+        tenant_id=complaint.tenant_id,
+        tenant_nickname=tenant.nickname if tenant else "",
+        type=complaint.type,
+        type_label=get_type_label(complaint.type),
+        content=complaint.content,
+        status=complaint.status,
+        status_label="已处理",
+        admin_feedback=complaint.admin_feedback or "",
+        created_at=complaint.created_at,
+        updated_at=complaint.updated_at
+    )
+
+    return ApiResponse(
+        code=200,
+        message="投诉处理完成",
+        data=complaint_data.dict()
+    )
 
 
 def get_type_label(type_val: str) -> str:

@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Optional
 from models.database import get_db
 from models.schemas import (
     Contract as ContractSchema,
     CreateContractRequest,
-    ConfirmContractRequest
+    ConfirmContractRequest,
+    PaginatedResponse,
+    ApiResponse
 )
 from models.user_model import UserModel
 from models.house_model import HouseModel
@@ -15,25 +17,18 @@ from utils.auth import get_current_user, get_current_tenant, get_current_landlor
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 
-router = APIRouter(prefix="/api/contracts", tags=["合同"])
+router = APIRouter(prefix="/api/v1", tags=["合同"])
 
 
-@router.post("", summary="发起租赁申请", status_code=status.HTTP_201_CREATED)
+@router.post("/contract", summary="发起租赁请求", status_code=status.HTTP_201_CREATED)
 def create_contract(
         request: CreateContractRequest,
         current_user: UserModel = Depends(get_current_tenant),
         db: Session = Depends(get_db)
 ):
-    """
-    租客发起租赁申请，生成待确认合同
-
-    - 检查房源是否存在且可租
-    - 检查是否已有进行中的申请
-    - 生成标准合同条款
-    """
+    """租客发起租赁申请，生成待确认合同"""
     house_id = request.house_id
 
-    # 查询房源
     house = db.query(HouseModel).filter(
         HouseModel.id == house_id,
         HouseModel.is_deleted == False
@@ -45,7 +40,6 @@ def create_contract(
     if house.status != 'vacant':
         raise HTTPException(status_code=400, detail=f"房源当前状态为：{house.status}，无法租赁")
 
-    # 检查是否已有待处理的合同
     existing_contract = db.query(ContractModel).filter(
         ContractModel.house_id == house_id,
         ContractModel.tenant_id == current_user.id,
@@ -55,21 +49,18 @@ def create_contract(
     if existing_contract:
         raise HTTPException(status_code=400, detail="您已对该房源发起过租赁申请，请等待房东确认")
 
-    # 获取房东信息
     landlord = db.query(UserModel).filter(UserModel.id == house.landlord_id).first()
     if not landlord:
         raise HTTPException(status_code=404, detail="房东信息不存在")
 
-    # 生成合同条款（标准模板）
     terms = generate_contract_terms(house, current_user, landlord)
 
-    # 创建合同
     new_contract = ContractModel(
         house_id=house_id,
         tenant_id=current_user.id,
         landlord_id=house.landlord_id,
-        start_date=date.today(),  # 默认从今天开始，实际可由用户选择
-        end_date=date.today() + relativedelta(months=12),  # 默认租期1年
+        start_date=date.today(),
+        end_date=date.today() + relativedelta(months=12),
         monthly_rent=house.monthly_rent,
         deposit=house.deposit,
         terms=terms,
@@ -81,37 +72,71 @@ def create_contract(
     db.commit()
     db.refresh(new_contract)
 
-    return {
-        "code": 200,
-        "message": "租赁申请已提交，等待房东确认",
-        "data": {"contract_id": new_contract.id}
-    }
+    house_data = db.query(HouseModel).filter(HouseModel.id == new_contract.house_id).first()
+    tenant = db.query(UserModel).filter(UserModel.id == new_contract.tenant_id).first()
+    landlord_data = db.query(UserModel).filter(UserModel.id == new_contract.landlord_id).first()
+
+    contract_data = ContractSchema(
+        id=new_contract.id,
+        house_id=new_contract.house_id,
+        tenant_id=new_contract.tenant_id,
+        landlord_id=new_contract.landlord_id,
+        house_address=f"{house_data.address_province}{house_data.address_city}{house_data.address_district}{house_data.address_detail}" if house_data else "",
+        house_layout=house_data.layout if house_data else "",
+        house_area=house_data.area if house_data else 0,
+        tenant_nickname=tenant.nickname if tenant else "",
+        tenant_phone=tenant.phone if tenant else "",
+        landlord_nickname=landlord_data.nickname if landlord_data else "",
+        landlord_phone=landlord_data.phone if landlord_data else "",
+        start_date=str(new_contract.start_date),
+        end_date=str(new_contract.end_date),
+        monthly_rent=new_contract.monthly_rent,
+        deposit=new_contract.deposit,
+        terms=new_contract.terms,
+        status=new_contract.status,
+        status_label=get_status_label(new_contract.status),
+        created_at=new_contract.created_at,
+        updated_at=new_contract.updated_at
+    )
+
+    return ApiResponse(
+        code=200,
+        message="租赁申请已提交，等待房东确认",
+        data=contract_data.dict()
+    )
 
 
-@router.get("/my", summary="我的合同列表")
-def get_my_contracts(
+@router.get("/contract/list", summary="获取合同列表")
+def get_contracts(
+        page: int = 1,
+        page_size: int = 10,
+        status: Optional[str] = None,
         current_user: UserModel = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """获取当前用户相关的合同列表"""
+    offset = (page - 1) * page_size
+
     if current_user.role == 'tenant':
-        contracts = db.query(ContractModel).filter(
-            ContractModel.tenant_id == current_user.id
-        ).order_by(ContractModel.created_at.desc()).all()
+        query = db.query(ContractModel).filter(ContractModel.tenant_id == current_user.id)
     elif current_user.role == 'landlord':
-        contracts = db.query(ContractModel).filter(
-            ContractModel.landlord_id == current_user.id
-        ).order_by(ContractModel.created_at.desc()).all()
+        query = db.query(ContractModel).filter(ContractModel.landlord_id == current_user.id)
     else:
         raise HTTPException(status_code=403, detail="管理员无合同功能")
 
-    result = []
+    if status:
+        query = query.filter(ContractModel.status == status)
+
+    total = query.count()
+    contracts = query.order_by(ContractModel.created_at.desc()).offset(offset).limit(page_size).all()
+
+    items = []
     for contract in contracts:
         house = db.query(HouseModel).filter(HouseModel.id == contract.house_id).first()
         tenant = db.query(UserModel).filter(UserModel.id == contract.tenant_id).first()
         landlord = db.query(UserModel).filter(UserModel.id == contract.landlord_id).first()
 
-        result.append(ContractSchema(
+        items.append(ContractSchema(
             id=contract.id,
             house_id=contract.house_id,
             tenant_id=contract.tenant_id,
@@ -134,10 +159,19 @@ def get_my_contracts(
             updated_at=contract.updated_at
         ))
 
-    return result
+    return ApiResponse(
+        code=200,
+        message="成功",
+        data={
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "items": [item.dict() for item in items]
+        }
+    )
 
 
-@router.get("/{contract_id}", summary="合同详情")
+@router.get("/contract/{contract_id}", summary="获取合同详情")
 def get_contract_detail(
         contract_id: int,
         current_user: UserModel = Depends(get_current_user),
@@ -149,7 +183,6 @@ def get_contract_detail(
     if not contract:
         raise HTTPException(status_code=404, detail="合同不存在")
 
-    # 权限检查：只有合同相关方可以查看
     if current_user.id not in [contract.tenant_id, contract.landlord_id]:
         raise HTTPException(status_code=403, detail="无权查看此合同")
 
@@ -157,7 +190,7 @@ def get_contract_detail(
     tenant = db.query(UserModel).filter(UserModel.id == contract.tenant_id).first()
     landlord = db.query(UserModel).filter(UserModel.id == contract.landlord_id).first()
 
-    return ContractSchema(
+    contract_data = ContractSchema(
         id=contract.id,
         house_id=contract.house_id,
         tenant_id=contract.tenant_id,
@@ -180,83 +213,114 @@ def get_contract_detail(
         updated_at=contract.updated_at
     )
 
+    return ApiResponse(
+        code=200,
+        message="成功",
+        data=contract_data.dict()
+    )
 
-@router.put("/{contract_id}/confirm", summary="房东确认合同")
+
+@router.post("/contract/confirm", summary="确认合同")
 def confirm_contract(
-        contract_id: int,
-        current_user: UserModel = Depends(get_current_landlord),
+        request: ConfirmContractRequest,
+        current_user: UserModel = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    """
-    房东确认租赁合同
-
-    - 状态从 pending_landlord 变为 pending_tenant
-    - 等待租客签署
-    """
+    """确认合同（房东或租客）"""
     contract = db.query(ContractModel).filter(
-        ContractModel.id == contract_id,
-        ContractModel.landlord_id == current_user.id
+        ContractModel.id == request.contract_id
     ).first()
 
     if not contract:
-        raise HTTPException(status_code=404, detail="合同不存在或无权操作")
+        raise HTTPException(status_code=404, detail="合同不存在")
 
-    if contract.status != 'pending_landlord':
-        raise HTTPException(status_code=400, detail=f"合同当前状态为：{get_status_label(contract.status)}，无法确认")
+    if current_user.id not in [contract.tenant_id, contract.landlord_id]:
+        raise HTTPException(status_code=403, detail="无权操作此合同")
 
-    contract.status = 'pending_tenant'
-    contract.updated_at = datetime.utcnow()
-    db.commit()
-
-    return {"code": 200, "message": "合同已确认，等待租客签署"}
-
-
-@router.put("/{contract_id}/sign", summary="租客签署合同")
-def sign_contract(
-        contract_id: int,
-        current_user: UserModel = Depends(get_current_tenant),
-        db: Session = Depends(get_db)
-):
-    """
-    租客签署合同
-
-    - 状态从 pending_tenant 变为 active
-    - 房源状态变为 rented
-    - 自动生成租金记录
-    """
-    contract = db.query(ContractModel).filter(
-        ContractModel.id == contract_id,
-        ContractModel.tenant_id == current_user.id
-    ).first()
-
-    if not contract:
-        raise HTTPException(status_code=404, detail="合同不存在或无权操作")
-
-    if contract.status != 'pending_tenant':
-        raise HTTPException(status_code=400, detail=f"合同当前状态为：{get_status_label(contract.status)}，无法签署")
-
-    # 开启事务
-    try:
-        # 1. 更新合同状态
+    if contract.status == 'pending_landlord' and current_user.id == contract.landlord_id:
+        contract.status = 'pending_tenant'
+    elif contract.status == 'pending_tenant' and current_user.id == contract.tenant_id:
         contract.status = 'active'
-        contract.updated_at = datetime.utcnow()
 
-        # 2. 更新房源状态
         house = db.query(HouseModel).filter(HouseModel.id == contract.house_id).first()
         if house:
             house.status = 'rented'
             house.updated_at = datetime.utcnow()
 
-        # 3. 生成租金记录（每月一条）
         generate_rent_records(db, contract)
+    else:
+        raise HTTPException(status_code=400, detail=f"合同当前状态为：{get_status_label(contract.status)}，无法确认")
 
-        db.commit()
+    contract.updated_at = datetime.utcnow()
+    db.commit()
 
-        return {"code": 200, "message": "合同签署成功，租赁关系已建立"}
+    house = db.query(HouseModel).filter(HouseModel.id == contract.house_id).first()
+    tenant = db.query(UserModel).filter(UserModel.id == contract.tenant_id).first()
+    landlord = db.query(UserModel).filter(UserModel.id == contract.landlord_id).first()
 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"签署失败: {str(e)}")
+    contract_data = ContractSchema(
+        id=contract.id,
+        house_id=contract.house_id,
+        tenant_id=contract.tenant_id,
+        landlord_id=contract.landlord_id,
+        house_address=f"{house.address_province}{house.address_city}{house.address_district}{house.address_detail}" if house else "",
+        house_layout=house.layout if house else "",
+        house_area=house.area if house else 0,
+        tenant_nickname=tenant.nickname if tenant else "",
+        tenant_phone=tenant.phone if tenant else "",
+        landlord_nickname=landlord.nickname if landlord else "",
+        landlord_phone=landlord.phone if landlord else "",
+        start_date=str(contract.start_date),
+        end_date=str(contract.end_date),
+        monthly_rent=contract.monthly_rent,
+        deposit=contract.deposit,
+        terms=contract.terms,
+        status=contract.status,
+        status_label=get_status_label(contract.status),
+        created_at=contract.created_at,
+        updated_at=contract.updated_at
+    )
+
+    return ApiResponse(
+        code=200,
+        message="合同确认成功",
+        data=contract_data.dict()
+    )
+
+
+@router.post("/contract/{contract_id}/terminate", summary="终止合同")
+def terminate_contract(
+        contract_id: int,
+        current_user: UserModel = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    """终止合同"""
+    contract = db.query(ContractModel).filter(ContractModel.id == contract_id).first()
+
+    if not contract:
+        raise HTTPException(status_code=404, detail="合同不存在")
+
+    if current_user.id not in [contract.tenant_id, contract.landlord_id]:
+        raise HTTPException(status_code=403, detail="无权操作此合同")
+
+    if contract.status != 'active':
+        raise HTTPException(status_code=400, detail="只有生效中的合同可以终止")
+
+    contract.status = 'terminated'
+    contract.updated_at = datetime.utcnow()
+
+    house = db.query(HouseModel).filter(HouseModel.id == contract.house_id).first()
+    if house:
+        house.status = 'vacant'
+        house.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return ApiResponse(
+        code=200,
+        message="合同已终止",
+        data=None
+    )
 
 
 def generate_contract_terms(house: HouseModel, tenant: UserModel, landlord: UserModel) -> str:
@@ -298,7 +362,6 @@ def generate_rent_records(db: Session, contract: ContractModel):
     """生成租金记录（合同生效后自动调用）"""
     start_date = contract.start_date
 
-    # 生成12个月的租金记录
     for i in range(12):
         rent_month = start_date + relativedelta(months=i)
         month_str = rent_month.strftime("%Y-%m")

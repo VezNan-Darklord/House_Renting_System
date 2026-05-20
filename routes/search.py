@@ -1,47 +1,39 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 from typing import Optional
 from models.database import get_db
-from models.schemas import SearchParams, SearchResult, HouseListItem
+from models.schemas import HouseListItem, SearchResult, ApiResponse
 from models.house_model import HouseModel
+from models.schemas import HouseType, DecorationType
 
-router = APIRouter(prefix="/api/search", tags=["搜索"])
+router = APIRouter(prefix="/api/v1", tags=["搜索"])
 
 
-@router.get("", summary="搜索房源")
+@router.get("/search/houses", summary="搜索房源")
 def search_houses(
-        page: int = Query(1, ge=1, description="页码"),
-        page_size: int = Query(10, ge=1, le=100, description="每页条数"),
-        keyword: Optional[str] = Query(None, description="关键词（地址/小区名）"),
-        province: Optional[str] = Query(None, description="省份"),
-        city: Optional[str] = Query(None, description="城市"),
-        district: Optional[str] = Query(None, description="区县"),
-        layout: Optional[str] = Query(None, description="户型"),
-        min_rent: Optional[float] = Query(None, ge=0, description="最低租金"),
-        max_rent: Optional[float] = Query(None, ge=0, description="最高租金"),
-        min_area: Optional[float] = Query(None, ge=0, description="最小面积"),
-        max_area: Optional[float] = Query(None, ge=0, description="最大面积"),
-        house_type: Optional[str] = Query(None, description="房源类型：apartment/residential/villa"),
-        decoration: Optional[str] = Query(None, description="装修类型：luxury/simple/rough"),
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        keyword: Optional[str] = Query(None),
+        layout: Optional[str] = Query(None),
+        province: Optional[str] = Query(None),
+        city: Optional[str] = Query(None),
+        district: Optional[str] = Query(None),
+        min_rent: Optional[float] = Query(None, ge=0),
+        max_rent: Optional[float] = Query(None, ge=0),
+        min_area: Optional[float] = Query(None, ge=0),
+        max_area: Optional[float] = Query(None, ge=0),
+        house_type: Optional[HouseType] = Query(None),
+        decoration: Optional[DecorationType] = Query(None),
         db: Session = Depends(get_db)
 ):
-    """
-    多条件搜索房源
+    """多条件搜索房源"""
 
-    - 支持关键词模糊搜索
-    - 支持地区精确匹配
-    - 支持租金/面积范围筛选
-    - 支持户型、类型、装修筛选
-    """
-
-    # 基础查询：未删除且非维修中的房源
     query = db.query(HouseModel).filter(
         HouseModel.is_deleted == False,
         HouseModel.status != 'maintenance'
     )
 
-    # 关键词搜索（匹配地址详情）
     if keyword:
         query = query.filter(
             or_(
@@ -51,7 +43,6 @@ def search_houses(
             )
         )
 
-    # 地区筛选
     if province:
         query = query.filter(HouseModel.address_province == province)
     if city:
@@ -59,38 +50,30 @@ def search_houses(
     if district:
         query = query.filter(HouseModel.address_district == district)
 
-    # 户型筛选（模糊匹配）
     if layout:
         query = query.filter(HouseModel.layout.like(f"%{layout}%"))
 
-    # 租金范围
     if min_rent is not None:
         query = query.filter(HouseModel.monthly_rent >= min_rent)
     if max_rent is not None:
         query = query.filter(HouseModel.monthly_rent <= max_rent)
 
-    # 面积范围
     if min_area is not None:
         query = query.filter(HouseModel.area >= min_area)
     if max_area is not None:
         query = query.filter(HouseModel.area <= max_area)
 
-    # 房源类型
     if house_type:
-        query = query.filter(HouseModel.house_type == house_type)
+        query = query.filter(HouseModel.house_type == house_type.value)
 
-    # 装修类型
     if decoration:
-        query = query.filter(HouseModel.decoration == decoration)
+        query = query.filter(HouseModel.decoration == decoration.value)
 
-    # 计算总数
     total = query.count()
 
-    # 分页查询
     offset = (page - 1) * page_size
     houses = query.order_by(HouseModel.created_at.desc()).offset(offset).limit(page_size).all()
 
-    # 构建响应
     items = [
         HouseListItem(
             id=house.id,
@@ -106,12 +89,14 @@ def search_houses(
         for house in houses
     ]
 
-    return {
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "items": items
-    }
+    return ApiResponse(
+        code=200,
+        message="成功",
+        data={
+            "total": total,
+            "items": [item.dict() for item in items]
+        }
+    )
 
 
 def get_status_label(status: str) -> str:

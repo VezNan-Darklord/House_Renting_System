@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.database import get_db
-from models.schemas import User as UserSchema, UpdateProfileRequest, ChangePasswordRequest, RentalHistory
+from models.schemas import User as UserSchema, UpdateProfileRequest, ChangePasswordRequest, ApiResponse
 from models.user_model import UserModel
 from utils.auth import get_current_user
-from typing import List
 
-router = APIRouter(prefix="/api/users", tags=["用户"])
+router = APIRouter(prefix="/api/v1", tags=["用户"])
 
 
-@router.get("/profile", summary="获取个人信息", response_model=UserSchema)
+@router.get("/user/profile", summary="获取个人信息")
 def get_profile(current_user: UserModel = Depends(get_current_user)):
     """获取当前登录用户的个人信息"""
-    return UserSchema(
+    user_data = UserSchema(
         id=current_user.id,
         role=current_user.role,
         email=current_user.email,
@@ -23,8 +22,14 @@ def get_profile(current_user: UserModel = Depends(get_current_user)):
         created_at=current_user.created_at
     )
 
+    return ApiResponse(
+        code=200,
+        message="成功",
+        data=user_data.dict()
+    )
 
-@router.put("/profile", summary="更新个人信息", response_model=UserSchema)
+
+@router.put("/user/profile", summary="更新个人信息")
 def update_profile(
         request: UpdateProfileRequest,
         current_user: UserModel = Depends(get_current_user),
@@ -41,7 +46,7 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
 
-    return UserSchema(
+    user_data = UserSchema(
         id=current_user.id,
         role=current_user.role,
         email=current_user.email,
@@ -52,8 +57,14 @@ def update_profile(
         created_at=current_user.created_at
     )
 
+    return ApiResponse(
+        code=200,
+        message="个人信息更新成功",
+        data=user_data.dict()
+    )
 
-@router.put("/password", summary="修改密码")
+
+@router.post("/user/change-password", summary="修改密码")
 def change_password(
         request: ChangePasswordRequest,
         current_user: UserModel = Depends(get_current_user),
@@ -62,41 +73,14 @@ def change_password(
     """修改当前用户密码"""
     from utils.auth import verify_password, get_password_hash
 
-    # 验证旧密码
     if not verify_password(request.old_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="旧密码错误")
 
-    # 更新新密码
     current_user.password_hash = get_password_hash(request.new_password)
     db.commit()
 
-    return {"code": 200, "message": "密码修改成功", "data": None}
-
-
-@router.get("/rental-history", summary="获取租赁历史", response_model=List[RentalHistory])
-def get_rental_history(
-        current_user: UserModel = Depends(get_current_user),
-        db: Session = Depends(get_db)
-):
-    """获取当前租客的租赁历史记录"""
-    from models.contract_model import ContractModel
-    from models.house_model import HouseModel
-
-    contracts = db.query(ContractModel).join(
-        HouseModel, ContractModel.house_id == HouseModel.id
-    ).filter(
-        ContractModel.tenant_id == current_user.id
-    ).all()
-
-    return [
-        RentalHistory(
-            contract_id=contract.id,
-            house_address=contract.house_address if hasattr(contract, 'house_address') else "",
-            house_layout=contract.house_layout if hasattr(contract, 'house_layout') else "",
-            start_date=str(contract.start_date),
-            end_date=str(contract.end_date),
-            monthly_rent=contract.monthly_rent,
-            status=contract.status
-        )
-        for contract in contracts
-    ]
+    return ApiResponse(
+        code=200,
+        message="密码修改成功",
+        data=None
+    )

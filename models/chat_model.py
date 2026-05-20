@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from .database import Base
+
 
 class ChatRoomModel(Base):
     __tablename__ = "chat_rooms"
@@ -11,17 +12,14 @@ class ChatRoomModel(Base):
     landlord_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint('house_id', 'tenant_id', 'landlord_id', name='unique_room'),
-    )
-
     house = relationship("HouseModel", backref="chat_rooms")
-    tenant = relationship("UserModel", foreign_keys=[tenant_id], backref="tenant_rooms")
-    landlord = relationship("UserModel", foreign_keys=[landlord_id], backref="landlord_rooms")
-    messages = relationship("MessageModel", back_populates="room")
+    tenant = relationship("UserModel", foreign_keys=[tenant_id], backref="tenant_chat_rooms")
+    landlord = relationship("UserModel", foreign_keys=[landlord_id], backref="landlord_chat_rooms")
+    messages = relationship("ChatMessageModel", backref="room", cascade="all, delete-orphan")
 
-class MessageModel(Base):
-    __tablename__ = "messages"
+
+class ChatMessageModel(Base):
+    __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     room_id = Column(Integer, ForeignKey('chat_rooms.id'), nullable=False)
@@ -29,5 +27,4 @@ class MessageModel(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
-    room = relationship("ChatRoomModel", back_populates="messages")
     sender = relationship("UserModel", backref="messages")
