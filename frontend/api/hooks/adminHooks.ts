@@ -1,25 +1,11 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type {
-    AdminResetPasswordRequest,
-    ApiResponse,
-    LogRecord,
-    PaginatedResponse,
-    User,
-    UserRole,
-} from '..';
-import { rent } from '../instance';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { AdminResetPasswordRequest, UserRole } from "..";
 
 type AdminUsersParams = {
     page?: number;
     pageSize?: number;
     role?: UserRole;
-};
-
-type AdminUsersResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<User>;
-    };
 };
 
 type AdminLogsParams = {
@@ -30,48 +16,25 @@ type AdminLogsParams = {
     userId?: number;
 };
 
-type AdminLogsResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<LogRecord>;
-    };
-};
-
-const adminKeys = {
-    all: ['admin'] as const,
-    users: (params?: AdminUsersParams) => [...adminKeys.all, 'users', params ?? {}] as const,
-    logs: (params?: AdminLogsParams) => [...adminKeys.all, 'logs', params ?? {}] as const,
-};
-
-export const useAdminUsers = (
-    params?: AdminUsersParams,
-    options?: UseQueryOptions<AdminUsersResponse, ApiError>
-) => {
+export function useAdminUsersQuery(params?: AdminUsersParams, enabled = true) {
     return useQuery({
-        queryKey: adminKeys.users(params),
+        queryKey: ["adminUsers", params],
         queryFn: () => rent.admin.getUsers(params?.page, params?.pageSize, params?.role),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useAdminLogs = (
-    params?: AdminLogsParams,
-    options?: UseQueryOptions<AdminLogsResponse, ApiError>
-) => {
+export function useAdminLogsQuery(params?: AdminLogsParams, enabled = true) {
     return useQuery({
-        queryKey: adminKeys.logs(params),
-        queryFn: () =>
-            rent.admin.getLogs(params?.page, params?.pageSize, params?.startDate, params?.endDate, params?.userId),
-        ...options,
+        queryKey: ["adminLogs", params],
+        queryFn: () => rent.admin.getLogs(params?.page, params?.pageSize, params?.startDate, params?.endDate, params?.userId),
+        enabled,
     });
-};
+}
 
-export const useResetPassword = (
-    options?: UseMutationOptions<ApiResponse, ApiError, AdminResetPasswordRequest>
-) => {
+export function useResetPasswordMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.admin.resetPassword(payload),
-        ...options,
+        mutationKey: ["adminResetPassword"],
+        mutationFn: (data: AdminResetPasswordRequest) => rent.admin.resetPassword(data),
     });
-};
-
-export { adminKeys };
+}

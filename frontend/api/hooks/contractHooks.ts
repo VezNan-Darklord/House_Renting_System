@@ -1,14 +1,6 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type {
-    ApiResponse,
-    ConfirmContractRequest,
-    Contract,
-    ContractStatus,
-    CreateContractRequest,
-    PaginatedResponse,
-} from '..';
-import { rent } from '../instance';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { ConfirmContractRequest, ContractStatus, CreateContractRequest } from "..";
 
 type ContractListParams = {
     page?: number;
@@ -16,70 +8,39 @@ type ContractListParams = {
     status?: ContractStatus;
 };
 
-type ContractListResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<Contract>;
-    };
-};
-
-type ContractDetailResponse = ApiResponse & {
-    data?: Contract;
-};
-
-const contractKeys = {
-    all: ['contract'] as const,
-    list: (params?: ContractListParams) => [...contractKeys.all, 'list', params ?? {}] as const,
-    detail: (contractId?: number) => [...contractKeys.all, 'detail', contractId ?? null] as const,
-};
-
-export const useContractList = (
-    params?: ContractListParams,
-    options?: UseQueryOptions<ContractListResponse, ApiError>
-) => {
+export function useContractListQuery(params?: ContractListParams, enabled = true) {
     return useQuery({
-        queryKey: contractKeys.list(params),
+        queryKey: ["contractList", params],
         queryFn: () => rent.contract.getContracts(params?.page, params?.pageSize, params?.status),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useContractDetail = (
-    contractId?: number,
-    options?: UseQueryOptions<ContractDetailResponse, ApiError>
-) => {
+export function useContractDetailQuery(contractId?: number, enabled = true) {
     return useQuery({
-        queryKey: contractKeys.detail(contractId),
+        queryKey: ["contractDetail", contractId],
         queryFn: () => rent.contract.getContractDetail(contractId as number),
-        enabled: Boolean(contractId) && (options?.enabled ?? true),
-        ...options,
+        enabled: Boolean(contractId) && enabled,
     });
-};
+}
 
-export const useCreateContract = (
-    options?: UseMutationOptions<ContractDetailResponse, ApiError, CreateContractRequest>
-) => {
+export function useCreateContractMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.contract.createContract(payload),
-        ...options,
+        mutationKey: ["contractCreate"],
+        mutationFn: (data: CreateContractRequest) => rent.contract.createContract(data),
     });
-};
+}
 
-export const useConfirmContract = (
-    options?: UseMutationOptions<ContractDetailResponse, ApiError, ConfirmContractRequest>
-) => {
+export function useConfirmContractMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.contract.confirmContract(payload),
-        ...options,
+        mutationKey: ["contractConfirm"],
+        mutationFn: (data: ConfirmContractRequest) => rent.contract.confirmContract(data),
     });
-};
+}
 
-export const useTerminateContract = (
-    options?: UseMutationOptions<ApiResponse, ApiError, number>
-) => {
+export function useTerminateContractMutation() {
     return useMutation({
-        mutationFn: (contractId) => rent.contract.terminateContract(contractId),
-        ...options,
+        mutationKey: ["contractTerminate"],
+        mutationFn: (contractId: number) => rent.contract.terminateContract(contractId),
     });
-};
-
-export { contractKeys };
+}

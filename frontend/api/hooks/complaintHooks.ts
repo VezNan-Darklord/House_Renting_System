@@ -1,14 +1,6 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type {
-    ApiResponse,
-    ComplaintRecord,
-    ComplaintRequest,
-    ComplaintStatus,
-    HandleComplaintRequest,
-    PaginatedResponse,
-} from '..';
-import { rent } from '../instance';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { ComplaintRequest, ComplaintStatus, HandleComplaintRequest } from "..";
 
 type ComplaintListParams = {
     page?: number;
@@ -16,48 +8,24 @@ type ComplaintListParams = {
     status?: ComplaintStatus;
 };
 
-type ComplaintListResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<ComplaintRecord>;
-    };
-};
-
-type ComplaintResponse = ApiResponse & {
-    data?: ComplaintRecord;
-};
-
-const complaintKeys = {
-    all: ['complaint'] as const,
-    list: (params?: ComplaintListParams) => [...complaintKeys.all, 'list', params ?? {}] as const,
-};
-
-export const useComplaintList = (
-    params?: ComplaintListParams,
-    options?: UseQueryOptions<ComplaintListResponse, ApiError>
-) => {
+export function useComplaintListQuery(params?: ComplaintListParams, enabled = true) {
     return useQuery({
-        queryKey: complaintKeys.list(params),
+        queryKey: ["complaintList", params],
         queryFn: () => rent.complaint.getComplaintList(params?.page, params?.pageSize, params?.status),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useCreateComplaint = (
-    options?: UseMutationOptions<ComplaintResponse, ApiError, ComplaintRequest>
-) => {
+export function useCreateComplaintMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.complaint.createComplaint(payload),
-        ...options,
+        mutationKey: ["complaintCreate"],
+        mutationFn: (data: ComplaintRequest) => rent.complaint.createComplaint(data),
     });
-};
+}
 
-export const useHandleComplaint = (
-    options?: UseMutationOptions<ComplaintResponse, ApiError, HandleComplaintRequest>
-) => {
+export function useHandleComplaintMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.complaint.handleComplaint(payload),
-        ...options,
+        mutationKey: ["complaintHandle"],
+        mutationFn: (data: HandleComplaintRequest) => rent.complaint.handleComplaint(data),
     });
-};
-
-export { complaintKeys };
+}

@@ -1,16 +1,6 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type {
-    ApiResponse,
-    House,
-    HouseListItem,
-    HouseRequest,
-    HouseStatus,
-    PaginatedResponse,
-    UpdateHouseStatusRequest,
-    UploadHouseImagesRequest,
-} from '..';
-import { rent } from '../instance';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { HouseRequest, HouseStatus, UpdateHouseStatusRequest, UploadHouseImagesRequest } from "..";
 
 type HouseListParams = {
     page?: number;
@@ -18,104 +8,55 @@ type HouseListParams = {
     status?: HouseStatus;
 };
 
-type HouseListResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<HouseListItem>;
-    };
-};
-
-type HouseDetailResponse = ApiResponse & {
-    data?: House;
-};
-
-type UpdateHousePayload = {
-    houseId: number;
-    data: HouseRequest;
-};
-
-type UpdateHouseStatusPayload = {
-    houseId: number;
-    data: UpdateHouseStatusRequest;
-};
-
-type UploadHouseImagesResponse = ApiResponse & {
-    data?: {
-        urls: Array<string>;
-    };
-};
-
-const houseKeys = {
-    all: ['house'] as const,
-    list: (params?: HouseListParams) => [...houseKeys.all, 'list', params ?? {}] as const,
-    detail: (houseId?: number) => [...houseKeys.all, 'detail', houseId ?? null] as const,
-};
-
-export const useHouseList = (
-    params?: HouseListParams,
-    options?: UseQueryOptions<HouseListResponse, ApiError>
-) => {
+export function useHouseListQuery(params?: HouseListParams, enabled = true) {
     return useQuery({
-        queryKey: houseKeys.list(params),
+        queryKey: ["houseList", params],
         queryFn: () => rent.house.getHouseList(params?.page, params?.pageSize, params?.status),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useHouseDetail = (
-    houseId?: number,
-    options?: UseQueryOptions<HouseDetailResponse, ApiError>
-) => {
+export function useHouseDetailQuery(houseId?: number, enabled = true) {
     return useQuery({
-        queryKey: houseKeys.detail(houseId),
+        queryKey: ["houseDetail", houseId],
         queryFn: () => rent.house.getHouseDetail(houseId as number),
-        enabled: Boolean(houseId) && (options?.enabled ?? true),
-        ...options,
+        enabled: Boolean(houseId) && enabled,
     });
-};
+}
 
-export const useCreateHouse = (
-    options?: UseMutationOptions<HouseDetailResponse, ApiError, HouseRequest>
-) => {
+export function useCreateHouseMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.house.createHouse(payload),
-        ...options,
+        mutationKey: ["houseCreate"],
+        mutationFn: (data: HouseRequest) => rent.house.createHouse(data),
     });
-};
+}
 
-export const useUpdateHouse = (
-    options?: UseMutationOptions<HouseDetailResponse, ApiError, UpdateHousePayload>
-) => {
+export function useUpdateHouseMutation() {
     return useMutation({
-        mutationFn: ({ houseId, data }) => rent.house.updateHouse(houseId, data),
-        ...options,
+        mutationKey: ["houseUpdate"],
+        mutationFn: (data: { houseId: number; data: HouseRequest }) =>
+            rent.house.updateHouse(data.houseId, data.data),
     });
-};
+}
 
-export const useDeleteHouse = (
-    options?: UseMutationOptions<ApiResponse, ApiError, number>
-) => {
+export function useDeleteHouseMutation() {
     return useMutation({
-        mutationFn: (houseId) => rent.house.deleteHouse(houseId),
-        ...options,
+        mutationKey: ["houseDelete"],
+        mutationFn: (houseId: number) => rent.house.deleteHouse(houseId),
     });
-};
+}
 
-export const useUpdateHouseStatus = (
-    options?: UseMutationOptions<HouseDetailResponse, ApiError, UpdateHouseStatusPayload>
-) => {
+export function useUpdateHouseStatusMutation() {
     return useMutation({
-        mutationFn: ({ houseId, data }) => rent.house.updateHouseStatus(houseId, data),
-        ...options,
+        mutationKey: ["houseUpdateStatus"],
+        mutationFn: (data: { houseId: number; data: UpdateHouseStatusRequest }) =>
+            rent.house.updateHouseStatus(data.houseId, data.data),
     });
-};
+}
 
-export const useUploadHouseImages = (
-    options?: UseMutationOptions<UploadHouseImagesResponse, ApiError, UploadHouseImagesRequest>
-) => {
+export function useUploadHouseImagesMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.house.uploadImages(payload),
-        ...options,
+        mutationKey: ["houseUploadImages"],
+        mutationFn: (data: UploadHouseImagesRequest) => rent.house.uploadImages(data),
     });
-};
-
-export { houseKeys };
+}

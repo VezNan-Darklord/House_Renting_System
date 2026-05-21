@@ -2,7 +2,7 @@ import { MailOutlined, LockOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Input, Radio, message } from "antd";
 import { useState } from "react";
 import type { UserRole } from "../../../../api";
-import { useRegister } from "../../../../api/hooks/userHooks";
+import { useRegisterMutation } from "../../../../api/hooks/userHooks";
 import { useUserContext } from "../../userContext";
 
 type RegisterPopWindowProps = {
@@ -19,36 +19,36 @@ export default function RegisterPopWindow({ onSuccess, onSwitch }: RegisterPopWi
     const [password, setPassword] = useState("");
     const [nickname, setNickname] = useState("");
 
-    const registerMutation = useRegister({
-        onSuccess: (response) => {
-            if (response.data?.token) {
-                setAuth(response.data.token, response.data.user);
-                setPassword("");
-                onSuccess();
-                message.success("注册成功");
-            } else {
-                message.error("注册失败，请检查账号信息");
-            }
-        },
-        onError: (error) => {
-            message.error(error.message ?? "注册失败");
-        },
-    });
+    const registerMutation = useRegisterMutation();
 
     const handleRegister = () => {
         if (!email.trim() || !password.trim() || !nickname.trim()) {
             message.warning("请完整填写注册信息");
             return;
         }
-        registerMutation.mutate({
-            role,
-            email,
-            password,
-            nickname,
-        }, {
-            onSuccess: ()=> message.success("注册成功！"),
-            onError: (error) => message.error(error.message ?? "注册失败！"),
-        });
+        registerMutation.mutate(
+            {
+                role,
+                email,
+                password,
+                nickname,
+            },
+            {
+                onSuccess: (response) => {
+                    if (response.data?.token) {
+                        setAuth(response.data.token, response.data.user);
+                        setPassword("");
+                        onSuccess();
+                        message.success("注册成功");
+                    } else {
+                        message.error("注册失败，请检查账号信息");
+                    }
+                },
+                onError: (error) => {
+                    message.error(error.message ?? "注册失败");
+                },
+            }
+        );
     };
 
     return (

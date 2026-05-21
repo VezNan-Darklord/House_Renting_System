@@ -1,13 +1,6 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type {
-    ApiResponse,
-    ConfirmPaymentRequest,
-    PaginatedResponse,
-    RemindPaymentRequest,
-    RentRecord,
-} from '..';
-import { rent } from '../instance';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { ConfirmPaymentRequest, RemindPaymentRequest } from "..";
 
 type RentRecordsParams = {
     contractId?: number;
@@ -15,48 +8,24 @@ type RentRecordsParams = {
     pageSize?: number;
 };
 
-type RentRecordsResponse = ApiResponse & {
-    data?: PaginatedResponse & {
-        items: Array<RentRecord>;
-    };
-};
-
-type RentRecordResponse = ApiResponse & {
-    data?: RentRecord;
-};
-
-const rentKeys = {
-    all: ['rent'] as const,
-    records: (params?: RentRecordsParams) => [...rentKeys.all, 'records', params ?? {}] as const,
-};
-
-export const useRentRecords = (
-    params?: RentRecordsParams,
-    options?: UseQueryOptions<RentRecordsResponse, ApiError>
-) => {
+export function useRentRecordsQuery(params?: RentRecordsParams, enabled = true) {
     return useQuery({
-        queryKey: rentKeys.records(params),
+        queryKey: ["rentRecords", params],
         queryFn: () => rent.rent.getRentRecords(params?.contractId, params?.page, params?.pageSize),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useConfirmPayment = (
-    options?: UseMutationOptions<RentRecordResponse, ApiError, ConfirmPaymentRequest>
-) => {
+export function useConfirmPaymentMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.rent.confirmPayment(payload),
-        ...options,
+        mutationKey: ["rentConfirmPayment"],
+        mutationFn: (data: ConfirmPaymentRequest) => rent.rent.confirmPayment(data),
     });
-};
+}
 
-export const useRemindPayment = (
-    options?: UseMutationOptions<ApiResponse, ApiError, RemindPaymentRequest>
-) => {
+export function useRemindPaymentMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.rent.remindPayment(payload),
-        ...options,
+        mutationKey: ["rentRemindPayment"],
+        mutationFn: (data: RemindPaymentRequest) => rent.rent.remindPayment(data),
     });
-};
-
-export { rentKeys };
+}

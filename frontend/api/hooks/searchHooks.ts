@@ -1,7 +1,6 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type { ApiResponse, DecorationType, HouseType, SearchResult } from '..';
-import { rent } from '../instance';
+import { useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
+import type { DecorationType, HouseType } from "..";
 
 type SearchParams = {
     page?: number;
@@ -19,21 +18,9 @@ type SearchParams = {
     decoration?: DecorationType;
 };
 
-type SearchResponse = ApiResponse & {
-    data?: SearchResult;
-};
-
-const searchKeys = {
-    all: ['search'] as const,
-    houses: (params?: SearchParams) => [...searchKeys.all, 'houses', params ?? {}] as const,
-};
-
-export const useSearchHouses = (
-    params?: SearchParams,
-    options?: UseQueryOptions<SearchResponse, ApiError>
-) => {
+export function useSearchHousesQuery(params?: SearchParams, enabled = true) {
     return useQuery({
-        queryKey: searchKeys.houses(params),
+        queryKey: ["searchHouses", params],
         queryFn: () =>
             rent.search.searchHouses(
                 params?.page,
@@ -50,8 +37,6 @@ export const useSearchHouses = (
                 params?.houseType,
                 params?.decoration
             ),
-        ...options,
+        enabled,
     });
-};
-
-export { searchKeys };
+}

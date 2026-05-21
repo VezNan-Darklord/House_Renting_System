@@ -1,15 +1,5 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
-import type { ApiResponse, ChatHistoryResponse, ChatRoom } from '..';
-import { rent } from '../instance';
-
-type ChatRoomsResponse = ApiResponse & {
-    data?: Array<ChatRoom>;
-};
-
-type ChatHistoryResponseWrapper = ApiResponse & {
-    data?: ChatHistoryResponse;
-};
+import { useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
 
 type ChatHistoryParams = {
     roomId: number;
@@ -17,30 +7,18 @@ type ChatHistoryParams = {
     pageSize?: number;
 };
 
-const chatKeys = {
-    all: ['chat'] as const,
-    rooms: () => [...chatKeys.all, 'rooms'] as const,
-    history: (params: ChatHistoryParams) => [...chatKeys.all, 'history', params] as const,
-};
-
-export const useChatRooms = (options?: UseQueryOptions<ChatRoomsResponse, ApiError>) => {
+export function useChatRoomsQuery(enabled = true) {
     return useQuery({
-        queryKey: chatKeys.rooms(),
+        queryKey: ["chatRooms"],
         queryFn: () => rent.chat.getChatRooms(),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useChatHistory = (
-    params: ChatHistoryParams | undefined,
-    options?: UseQueryOptions<ChatHistoryResponseWrapper, ApiError>
-) => {
+export function useChatHistoryQuery(params?: ChatHistoryParams, enabled = true) {
     return useQuery({
-        queryKey: params ? chatKeys.history(params) : chatKeys.history({ roomId: 0 }),
+        queryKey: ["chatHistory", params],
         queryFn: () => rent.chat.getChatHistory(params?.roomId as number, params?.page, params?.pageSize),
-        enabled: Boolean(params?.roomId) && (options?.enabled ?? true),
-        ...options,
+        enabled: Boolean(params?.roomId) && enabled,
     });
-};
-
-export { chatKeys };
+}

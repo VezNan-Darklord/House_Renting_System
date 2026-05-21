@@ -1,69 +1,44 @@
-import { useMutation, useQuery, type UseMutationOptions, type UseQueryOptions } from '@tanstack/react-query';
-import { ApiError } from '..';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { rent } from "../instance";
 import type {
-    ApiResponse,
     ChangePasswordRequest,
     LoginRequest,
     RegisterRequest,
     UpdateProfileRequest,
-    User,
-} from '..';
-import { rent } from '../instance';
+} from "..";
 
-const userKeys = {
-    all: ['user'] as const,
-    profile: () => [...userKeys.all, 'profile'] as const,
-};
-
-type AuthResponse = ApiResponse & {
-    data?: {
-        token: string;
-        user: User;
-    };
-};
-
-type ProfileResponse = ApiResponse & {
-    data?: User;
-};
-
-export const useRegister = (options?: UseMutationOptions<AuthResponse, ApiError, RegisterRequest>) => {
+export function useRegisterMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.user.register(payload),
-        ...options,
+        mutationKey: ["userRegister"],
+        mutationFn: (data: RegisterRequest) => rent.user.register(data),
     });
-};
+}
 
-export const useLogin = (options?: UseMutationOptions<AuthResponse, ApiError, LoginRequest>) => {
+export function useLoginMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.user.login(payload),
-        ...options,
+        mutationKey: ["userLogin"],
+        mutationFn: (data: LoginRequest) => rent.user.login(data),
     });
-};
+}
 
-export const useProfile = (options?: UseQueryOptions<ProfileResponse, ApiError>) => {
+export function useProfileQuery(enabled = true) {
     return useQuery({
-        queryKey: userKeys.profile(),
+        queryKey: ["userProfile"],
         queryFn: () => rent.user.getProfile(),
-        ...options,
+        enabled,
     });
-};
+}
 
-export const useUpdateProfile = (
-    options?: UseMutationOptions<ProfileResponse, ApiError, UpdateProfileRequest>
-) => {
+export function useUpdateProfileMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.user.updateProfile(payload),
-        ...options,
+        mutationKey: ["userUpdateProfile"],
+        mutationFn: (data: UpdateProfileRequest) => rent.user.updateProfile(data),
     });
-};
+}
 
-export const useChangePassword = (
-    options?: UseMutationOptions<ApiResponse, ApiError, ChangePasswordRequest>
-) => {
+export function useChangePasswordMutation() {
     return useMutation({
-        mutationFn: (payload) => rent.user.changePassword(payload),
-        ...options,
+        mutationKey: ["userChangePassword"],
+        mutationFn: (data: ChangePasswordRequest) => rent.user.changePassword(data),
     });
-};
-
-export { userKeys };
+}
