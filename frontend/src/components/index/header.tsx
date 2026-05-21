@@ -1,7 +1,13 @@
 import { HomeOutlined, StarOutlined, BellOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Badge, Input } from "antd";
+import { useState } from "react";
+import { useUserContext } from "../userContext";
+import LoginPopWindow from "./login/loginPopWindow";
 
 export default function Header() {
+    const { isLoggedIn } = useUserContext();
+    const [loginOpen, setLoginOpen] = useState(false);
+
     return (
         <header className="border-b border-black/5 bg-white/80 backdrop-blur-xl">
             <div className="mx-auto flex h-50 w-full max-w-400 items-center px-4 sm:px-6 lg:px-8">
@@ -17,17 +23,30 @@ export default function Header() {
                             </div>
                         </div>
                         <div className="hidden items-center gap-3 lg:flex">
-                            <Button type="text" icon={<StarOutlined />} className="text-slate-700!">
-                                收藏
-                            </Button>
-                            <Badge count={3} size="small">
-                                <Button type="text" icon={<BellOutlined />} className="text-slate-700!">
-                                    消息
+                            {isLoggedIn ? (
+                                <>
+                                    <Button type="text" icon={<StarOutlined />} className="text-slate-700!">
+                                        收藏
+                                    </Button>
+                                    <Badge count={3} size="small">
+                                        <Button type="text" icon={<BellOutlined />} className="text-slate-700!">
+                                            消息
+                                        </Button>
+                                    </Badge>
+                                    <Button type="primary" shape="round" className="bg-slate-900! shadow-none!">
+                                        发布房源
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    type="primary"
+                                    shape="round"
+                                    className="bg-slate-900! shadow-none!"
+                                    onClick={() => setLoginOpen(true)}
+                                >
+                                    登录
                                 </Button>
-                            </Badge>
-                            <Button type="primary" shape="round" className="bg-slate-900! shadow-none!">
-                                发布房源
-                            </Button>
+                            )}
                         </div>
                     </div>
 
@@ -71,6 +90,7 @@ export default function Header() {
                     </div>
                 </div>
             </div>
+            <LoginPopWindow open={loginOpen} onClose={() => setLoginOpen(false)} />
         </header>
     )
 }

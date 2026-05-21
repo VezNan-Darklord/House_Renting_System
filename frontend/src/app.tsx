@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router"
-import Index from "./components"
-import Header from "./components/header"
-import Sidebar from "./components/sidebar"
+import Index from "./components/index"
+import Header from "./components/index/header"
+import Sidebar from "./components/index/sidebar"
 export default function App() {
     const router = createBrowserRouter([
         {
