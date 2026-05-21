@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
+
 from models.database import engine, Base
 
 # 创建所有表
@@ -10,7 +12,7 @@ app = FastAPI(
     description="前后端分离的租赁平台后端",
     version="1.0.0",
     docs_url="/api/v1",
-    redoc_url=None,
+    redoc_url="/api/v1/docs",
     openapi_url="/api/v1/openapi.json"
 )
 
@@ -22,6 +24,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 from routes.auth import router as auth_router
 app.include_router(auth_router)
