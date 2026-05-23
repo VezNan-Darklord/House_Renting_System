@@ -16,6 +16,7 @@ from utils.auth import get_current_landlord
 from datetime import datetime
 import os
 import uuid
+import hashlib
 
 router = APIRouter(prefix="/api/v1", tags=["房源"])
 
@@ -44,7 +45,7 @@ def create_house(
         decoration=request.decoration.value,
         facilities=request.facilities,
         description=request.description,
-        images=[],
+        images=request.images,
         status='vacant',
         created_at=datetime.utcnow()
     )
@@ -200,6 +201,7 @@ def update_house(
     house.decoration = request.decoration.value
     house.facilities = request.facilities
     house.description = request.description
+    house.images = request.images
     house.updated_at = datetime.utcnow()
 
     db.commit()
@@ -335,13 +337,19 @@ async def upload_images(
     urls = []
 
     for file in files:
-        file_extension = file.filename.split(".")[-1]
-        filename = f"{uuid.uuid4().hex}.{file_extension}"
+        content = await file.read()
+
+        file_hash = hashlib.sha256(content).hexdigest()
+
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+
+        filename = f"{file_hash}.{file_extension}"
+
         filepath = os.path.join(UPLOAD_DIR, filename)
 
-        with open(filepath, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
+        if not os.path.exists(filepath):
+            with open(filepath, "wb") as buffer:
+                buffer.write(content)
 
         image_url = f"/uploads/{filename}"
         urls.append(image_url)

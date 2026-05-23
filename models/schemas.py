@@ -180,6 +180,7 @@ class HouseRequest(BaseModel):
     decoration: DecorationType
     facilities: List[str] = []
     description: str = ""
+    images: List[str] = []
 
 class ImageUploadResponse(BaseModel):
     """图片上传响应"""
