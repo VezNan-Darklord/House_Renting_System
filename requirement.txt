@@ -1,11 +1,30 @@
-fastapi
-uvicorn
-sqlalchemy
-pymysql
-python-dotenv
-bcrypt
-python-jose[cryptography]
-pydantic[email]
-python-multipart
-dateutil
-python-dateutil
+# FastAPI 核心框架
+fastapi>=0.104.0,<1.0.0
+
+# ASGI 服务器
+uvicorn[standard]>=0.24.0,<1.0.0
+
+# ORM 数据库工具
+sqlalchemy>=2.0.0,<3.0.0
+
+# MySQL 数据库驱动
+pymysql>=1.1.0,<2.0.0
+
+# 环境变量管理
+python-dotenv>=1.0.0,<2.0.0
+
+# 密码加密（bcrypt）
+bcrypt>=4.0.0,<5.0.0
+
+# JWT Token 生成与验证
+python-jose[cryptography]>=3.3.0,<4.0.0
+
+# Pydantic 数据验证（包含邮箱验证）
+pydantic[email]>=2.0.0,<3.0.0
+
+# 文件上传支持（multipart/form-data）
+python-multipart>=0.0.6,<1.0.0
+
+# 日期时间处理
+python-dateutil>=2.8.0,<3.0.0
+
