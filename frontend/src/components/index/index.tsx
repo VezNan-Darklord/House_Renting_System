@@ -1,13 +1,33 @@
 import HouseCard from "./houseCard";
 import { useHouseListQuery } from "../../../api/hooks/houseHooks";
+import { useSearchHousesQuery } from "../../../api/hooks/searchHooks";
 import { SearchOutlined } from "@ant-design/icons";
 import { Input, Button } from "antd";
 import Sidebar from "./sidebar";
 import Header from "./header";
-
+import { useState } from "react";
+ 
 export default function Index() { 
-    const { data, isLoading, isError } = useHouseListQuery({ page: 1, pageSize: 12 });
-    const items = data?.data?.items ?? [];
+    const [keywordInput, setKeywordInput] = useState("");
+    const [searchKeyword, setSearchKeyword] = useState("");
+    const isSearching = Boolean(searchKeyword);
+
+    const { data: listData, isLoading: listLoading, isError: listError } = useHouseListQuery(
+        { page: 1, pageSize: 12 },
+        !isSearching
+    );
+    const { data: searchData, isLoading: searchLoading, isError: searchError } = useSearchHousesQuery(
+        { page: 1, pageSize: 12, keyword: searchKeyword },
+        isSearching
+    );
+
+    const items = isSearching ? searchData?.data?.items ?? [] : listData?.data?.items ?? [];
+    const isLoading = isSearching ? searchLoading : listLoading;
+    const isError = isSearching ? searchError : listError;
+
+    const handleSearch = () => {
+        setSearchKeyword(keywordInput.trim());
+    };
 
     return (
         <div className="min-h-screen bg-[#faf7f2] text-slate-900">   
@@ -25,6 +45,9 @@ export default function Index() {
                                     prefix={<SearchOutlined className="text-slate-400" />}
                                     placeholder="请输入城市、小区、地铁站或房源关键词"
                                     className="px-0! text-base!"
+                                    value={keywordInput}
+                                    onChange={(event) => setKeywordInput(event.target.value)}
+                                    onPressEnter={handleSearch}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3 lg:w-90 lg:grid-cols-3">
@@ -36,7 +59,13 @@ export default function Index() {
                                     <div className="text-xs font-medium text-slate-500">租金</div>
                                     <div className="mt-1 text-sm font-semibold text-slate-900">不限</div>
                                 </div>
-                                <Button size="large" shape="round" type="primary" className="h-full min-h-16 bg-orange-500! font-semibold! shadow-none!">
+                                <Button
+                                    size="large"
+                                    shape="round"
+                                    type="primary"
+                                    className="h-full min-h-16 bg-orange-500! font-semibold! shadow-none!"
+                                    onClick={handleSearch}
+                                >
                                     搜索
                                 </Button>
                             </div>
@@ -64,7 +93,9 @@ export default function Index() {
                         ))}
                     </div>
                     {!isLoading && !isError && items.length === 0 ? (
-                        <div className="mt-6 text-center text-sm text-slate-500">暂无可浏览房源</div>
+                        <div className="mt-6 text-center text-sm text-slate-500">
+                            {isSearching ? "暂无搜索结果" : "暂无可浏览房源"}
+                        </div>
                     ) : null}
                     {isError ? (
                         <div className="mt-6 text-center text-sm text-rose-500">房源加载失败，请稍后重试</div>

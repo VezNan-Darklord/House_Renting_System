@@ -59,8 +59,16 @@ export default function ChatRoom() {
         isLoggedIn
     );
 
-    const message = useMemo(() => historyResponse?.data?.messages ?? [], [historyResponse]);
-    const [messages, setMessages] = useState<ChatMessage[]>(message);
+    const [localMessagesByRoom, setLocalMessagesByRoom] = useState<Record<number, ChatMessage[]>>({});
+    const messages = useMemo(() => {
+        if (!selectedRoomId) return [];
+        const historyMessages = historyResponse?.data?.messages ?? [];
+        const localMessages = localMessagesByRoom[selectedRoomId] ?? [];
+        if (localMessages.length === 0) return historyMessages;
+        const historyIds = new Set(historyMessages.map((item) => item.id).filter(Boolean));
+        const mergedLocal = localMessages.filter((item) => !item.id || !historyIds.has(item.id));
+        return [...historyMessages, ...mergedLocal];
+    }, [historyResponse?.data?.messages, localMessagesByRoom, selectedRoomId]);
 
     useEffect(() => {
         if (!token) return;
@@ -75,8 +83,13 @@ export default function ChatRoom() {
         const handleIncoming = (payload: unknown) => {
             const message = normalizeIncomingMessage(payload);
             if (!message) return;
-            if (message.room_id && activeRoomRef.current && message.room_id !== activeRoomRef.current) return;
-            setMessages((prev) => [...prev, message]);
+            const targetRoomId = message.room_id ?? activeRoomRef.current;
+            if (!targetRoomId) return;
+            if (activeRoomRef.current && targetRoomId !== activeRoomRef.current) return;
+            setLocalMessagesByRoom((prev) => ({
+                ...prev,
+                [targetRoomId]: [...(prev[targetRoomId] ?? []), message],
+            }));
         };
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
@@ -131,7 +144,10 @@ export default function ChatRoom() {
             content,
             created_at: new Date().toISOString(),
         };
-        setMessages((prev) => [...prev, outgoingMessage]);
+        setLocalMessagesByRoom((prev) => ({
+            ...prev,
+            [selectedRoomId]: [...(prev[selectedRoomId] ?? []), outgoingMessage],
+        }));
         socket.emit("send_message", {
             room_id: selectedRoomId,
             content,
