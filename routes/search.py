@@ -6,6 +6,7 @@ from models.database import get_db
 from models.schemas import HouseListItem, SearchResult, ApiResponse
 from models.house_model import HouseModel
 from models.schemas import HouseType, DecorationType
+from utils.image_handler import image_url_to_base64
 
 router = APIRouter(prefix="/api/v1", tags=["搜索"])
 
@@ -77,7 +78,7 @@ def search_houses(
     items = [
         HouseListItem(
             id=house.id,
-            cover_image=house.images[0] if house.images else "",
+            cover_image=image_url_to_base64(house.images[0]) if house.images else "",
             layout=house.layout,
             address_summary=f"{house.address_province}{house.address_city}{house.address_district}",
             monthly_rent=house.monthly_rent,

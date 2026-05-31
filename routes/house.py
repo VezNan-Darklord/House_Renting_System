@@ -17,6 +17,7 @@ from datetime import datetime
 import os
 import uuid
 import hashlib
+from utils.image_handler import images_urls_to_base64, image_url_to_base64
 
 router = APIRouter(prefix="/api/v1", tags=["房源"])
 
@@ -105,7 +106,7 @@ def get_house_list(
     items = [
         HouseListItem(
             id=house.id,
-            cover_image=house.images[0] if house.images else "",
+            cover_image=image_url_to_base64(house.images[0]) if house.images else "",
             layout=house.layout,
             address_summary=f"{house.address_province}{house.address_city}{house.address_district}",
             monthly_rent=house.monthly_rent,
@@ -158,7 +159,7 @@ def get_house_detail(house_id: int, db: Session = Depends(get_db)):
         decoration=house.decoration,
         facilities=house.facilities or [],
         description=house.description or "",
-        images=house.images or [],
+        images=images_urls_to_base64(house.images or []),
         status=house.status,
         is_deleted=house.is_deleted,
         created_at=house.created_at,
@@ -225,7 +226,7 @@ def update_house(
         decoration=house.decoration,
         facilities=house.facilities or [],
         description=house.description or "",
-        images=house.images or [],
+        images=images_urls_to_base64(house.images or []),
         status=house.status,
         is_deleted=house.is_deleted,
         created_at=house.created_at,
@@ -314,7 +315,7 @@ def update_house_status(
         decoration=house.decoration,
         facilities=house.facilities or [],
         description=house.description or "",
-        images=house.images or [],
+        images=images_urls_to_base64(house.images or []),
         status=house.status,
         is_deleted=house.is_deleted,
         created_at=house.created_at,

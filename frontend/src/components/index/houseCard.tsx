@@ -7,7 +7,7 @@ type HouseCardProps = {
     item?: HouseListItem;
 };
 
-export default function HouseCard({ index, item }: HouseCardProps) { 
+export default function HouseCard({ index, item }: HouseCardProps) {
     const title = item?.address_summary ?? "城市核心区域的优质房源";
     const subtitle = item?.layout
         ? `${item.layout} · ${item.area ? `${item.area}㎡` : "可看房"} · ${item.status_label ?? "真实房源"}`
@@ -15,6 +15,8 @@ export default function HouseCard({ index, item }: HouseCardProps) {
     const badgeText = item?.status_label ?? (index % 2 === 0 ? "整租" : "合租");
     const rent = item?.monthly_rent ?? index * 300 + 2200;
     const coverImage = item?.cover_image;
+
+    const isBase64Image = coverImage && coverImage.startsWith('data:image');
 
     return (
         <article
@@ -25,7 +27,9 @@ export default function HouseCard({ index, item }: HouseCardProps) {
                 style={
                     coverImage
                         ? {
-                              backgroundImage: `url(${coverImage})`,
+                              backgroundImage: isBase64Image
+                                  ? `url(${coverImage})`
+                                  : `url(${coverImage})`,
                               backgroundSize: "cover",
                               backgroundPosition: "center",
                           }
