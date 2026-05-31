@@ -21,6 +21,7 @@ export default function HouseCard({ index, item }: HouseCardProps) {
     return (
         <article
             className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.06)] transition-transform duration-300 hover:-translate-y-1"
+            onClick={() => window.open(`/house/${item?.id}`, '_blank', 'noreferrer')}
         >
             <div
                 className="relative aspect-4/3 border-b border-dashed border-slate-200 bg-linear-to-br from-orange-100 via-white to-slate-100"

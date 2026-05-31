@@ -29,7 +29,7 @@ export default function Header() {
     ]
 
     return (
-        <header className="fixed left-0 top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-xl">
+        <header className="fixed left-0 top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-xl hover:cursor-pointer" onClick={() => navigate("/")}>
             <div className="mx-auto flex w-full max-w-400 items-center -translate-y-5 px-4 sm:px-6 lg:px-8">
                 <div className="flex w-full flex-col gap-6">
                     <div className="flex items-center justify-between gap-4 mt-10">
