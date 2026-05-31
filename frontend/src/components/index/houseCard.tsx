@@ -14,9 +14,7 @@ export default function HouseCard({ index, item }: HouseCardProps) {
         : "地铁近 · 商圈近 · 可看房 · 真实图片后续接入";
     const badgeText = item?.status_label ?? (index % 2 === 0 ? "整租" : "合租");
     const rent = item?.monthly_rent ?? index * 300 + 2200;
-    const coverImage = item?.cover_image;
-
-    const isBase64Image = coverImage && coverImage.startsWith('data:image');
+    const base64Image = item?.cover_image;
 
     return (
         <article
@@ -26,18 +24,15 @@ export default function HouseCard({ index, item }: HouseCardProps) {
             <div
                 className="relative aspect-4/3 border-b border-dashed border-slate-200 bg-linear-to-br from-orange-100 via-white to-slate-100"
                 style={
-                    coverImage
+                    base64Image
                         ? {
-                              backgroundImage: isBase64Image
-                                  ? `url(${coverImage})`
-                                  : `url(${coverImage})`,
+                              backgroundImage: `url(${base64Image})`,
                               backgroundSize: "cover",
                               backgroundPosition: "center",
                           }
                         : undefined
                 }
             >
-                <div className="absolute inset-4 rounded-3xl border border-dashed border-slate-300/80 bg-white/50" />
                 <div className="absolute left-4 top-4 rounded-full border border-white/70 bg-black/70 px-3 py-1 text-xs font-medium text-white">
                     {item?.id ? `房源 ${item.id}` : `占位房源 ${index + 1}`}
                 </div>
@@ -57,14 +52,6 @@ export default function HouseCard({ index, item }: HouseCardProps) {
                     <Tooltip title="收藏">
                         <Button type="text" shape="circle" icon={<HeartOutlined />} className="shrink-0 text-slate-400 shadow-none" />
                     </Tooltip>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    {['南北通透', '电梯房', '近地铁'].map((tag) => (
-                        <span key={tag} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
-                            {tag}
-                        </span>
-                    ))}
                 </div>
 
                 <Divider className="my-0! border-slate-200!" />

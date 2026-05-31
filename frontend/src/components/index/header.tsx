@@ -1,15 +1,18 @@
 import { DownOutlined, HomeOutlined } from "@ant-design/icons";
 import { Button, Dropdown, Space, type MenuProps } from "antd";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useUserContext } from "../userContext";
 import LoginPopWindow from "../index/login/loginPopWindow";
 import { useNavigate } from "react-router";
+import { useProfileQuery } from "../../../api/hooks/userHooks";
 
 export default function Header() {
     const { isLoggedIn } = useUserContext();
     const [loginOpen, setLoginOpen] = useState(false);
-    const userInfo = useUserContext();
-    const canPublish = isLoggedIn && (userInfo.user?.role === "landlord" || userInfo.user?.role === "admin");
+
+    const userContext = useUserContext();
+    const userInfo = useProfileQuery();
+    const canPublish = useMemo(()=> isLoggedIn && userInfo.data?.data?.role === "landlord", [isLoggedIn, userInfo.data?.data?.role]);
     const navigate = useNavigate();
 
     const items: MenuProps['items'] = [
@@ -22,7 +25,7 @@ export default function Header() {
             label: '退出登录',
             key: 'logout',
             onClick: () => { 
-                userInfo.clearAuth();
+                userContext.clearAuth();
                 navigate("/");
             }
         }
@@ -46,14 +49,20 @@ export default function Header() {
                             {isLoggedIn ? (
                                 <>
                                     {canPublish && (
-                                        <Button type="primary" onClick={() => navigate("/house/publish")} shape="round" className="bg-slate-900! shadow-none!">
+                                        <Button
+                                            type="primary"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate("/house/publish");
+                                            }}
+                                        >
                                             发布房源
                                         </Button>
                                     )}
                                     <Dropdown menu={{ items }}>
                                         <a onClick={(e) => e.preventDefault()}>
                                             <Space>
-                                                {userInfo.user?.nickname|| "用户"}
+                                                {userInfo.data?.data?.nickname}
                                                 <DownOutlined />
                                             </Space>
                                         </a>
