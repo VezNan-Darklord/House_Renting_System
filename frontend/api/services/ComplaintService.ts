@@ -11,7 +11,10 @@ import type { PaginatedResponse } from '../models/PaginatedResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class ComplaintService {
-    constructor(public readonly httpRequest: BaseHttpRequest) {}
+    public readonly httpRequest: BaseHttpRequest;
+    constructor(httpRequest: BaseHttpRequest) {
+        this.httpRequest = httpRequest;
+    }
     /**
      * 提交投诉
      * @param requestBody

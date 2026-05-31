@@ -1,12 +1,14 @@
-import { Avatar, Button, Divider, Spin, Tag } from "antd";
+import { Avatar, Button, Divider, Form, Input, Spin, Tag, message } from "antd";
 import { DollarOutlined, FileTextOutlined, HomeOutlined, MailOutlined, PhoneOutlined, SafetyOutlined, UserOutlined, VerticalRightOutlined } from "@ant-design/icons";
 import { useUserContext } from "../userContext";
-import { useProfileQuery } from "../../../api/hooks/userHooks";
+import { useProfileQuery, useUpdateProfileMutation } from "../../../api/hooks/userHooks";
 import { useContractListQuery } from "../../../api/hooks/contractHooks";
 import { useRentRecordsQuery } from "../../../api/hooks/rentHooks";
 import { useHouseListQuery } from "../../../api/hooks/houseHooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import PopWindow from "../common/PopWindow";
+import type { UpdateProfileRequest } from "../../../api";
 
 const roleLabelMap: Record<string, string> = {
     tenant: "租客",
@@ -21,11 +23,23 @@ export default function UserCard() {
 
     const navigate = useNavigate();
     const [baseInfo, setBaseInfo] = useState<baseInfoItem>('account');
+    const [editOpen, setEditOpen] = useState(false);
+    const [editForm] = Form.useForm<UpdateProfileRequest>();
     
 
     const profileQuery = useProfileQuery(isLoggedIn);
     const profile = profileQuery.data?.data;
     const role = profile?.role;
+    const updateProfileMutation = useUpdateProfileMutation();
+
+    useEffect(() => {
+        if (!profile) return;
+        editForm.setFieldsValue({
+            nickname: profile.nickname ?? "",
+            phone: profile.phone ?? "",
+            avatar: profile.avatar ?? "",
+        });
+    }, [editForm, profile]);
     const sideItems = [
         { key: "back", label: "返回首页", icon: <VerticalRightOutlined />, onClick: () => navigate("/") },
         { key: "account", label: "账号信息", icon: <UserOutlined />, onClick: () => setBaseInfo('account') },
@@ -106,7 +120,11 @@ export default function UserCard() {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <Tag color="orange">{role ? roleLabelMap[role] : "未知角色"}</Tag>
-                                    <Button shape="round" className="border-slate-200 text-slate-700 shadow-none">
+                                    <Button
+                                        shape="round"
+                                        className="border-slate-200 text-slate-700 shadow-none"
+                                        onClick={() => setEditOpen(true)}
+                                    >
                                         编辑资料
                                     </Button>
                                 </div>
@@ -251,6 +269,38 @@ export default function UserCard() {
                     </div>
                 </div>
             </main>
+            <PopWindow open={editOpen} title="编辑个人信息" onClose={() => setEditOpen(false)}>
+                <Form
+                    form={editForm}
+                    layout="vertical"
+                    onFinish={async (values) => {
+                        try {
+                            await updateProfileMutation.mutateAsync(values);
+                            message.success("个人信息已更新");
+                            setEditOpen(false);
+                            profileQuery.refetch();
+                        } catch (error) {
+                            message.error(error instanceof Error ? error.message : "更新失败");
+                        }
+                    }}
+                >
+                    <Form.Item label="昵称" name="nickname">
+                        <Input placeholder="请输入昵称" />
+                    </Form.Item>
+                    <Form.Item label="手机号" name="phone">
+                        <Input placeholder="请输入手机号" />
+                    </Form.Item>
+                    <Form.Item label="头像地址" name="avatar">
+                        <Input placeholder="请输入头像图片地址" />
+                    </Form.Item>
+                    <div className="flex justify-end gap-3">
+                        <Button onClick={() => setEditOpen(false)}>取消</Button>
+                        <Button type="primary" className="bg-slate-900! shadow-none!" loading={updateProfileMutation.isPending} htmlType="submit">
+                            保存
+                        </Button>
+                    </div>
+                </Form>
+            </PopWindow>
         </div>
     );
 }

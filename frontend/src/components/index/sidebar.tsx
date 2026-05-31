@@ -1,4 +1,4 @@
-import { UserOutlined, HeartOutlined, BellOutlined, StarOutlined, AppstoreOutlined } from "@ant-design/icons";
+import { UserOutlined, BellOutlined, StarOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 import { useNavigate } from "react-router";
 
@@ -6,7 +6,6 @@ export default function Sidebar() {
     const navigate = useNavigate();
     const sidbarItems = [
         { icon: <UserOutlined />, label: '我的', onClick: () => navigate('/user') },
-        { icon: <HeartOutlined />, label: '收藏' },
         { icon: <BellOutlined />, label: '消息', onClick: () => navigate('/chat') },
         { icon: <StarOutlined />, label: '推荐' },
         { icon: <AppstoreOutlined />, label: '分类' },

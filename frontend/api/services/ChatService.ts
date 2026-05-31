@@ -8,7 +8,10 @@ import type { ChatRoom } from '../models/ChatRoom';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class ChatService {
-    constructor(public readonly httpRequest: BaseHttpRequest) {}
+    public readonly httpRequest: BaseHttpRequest;
+    constructor(httpRequest: BaseHttpRequest) {
+        this.httpRequest = httpRequest;
+    }
     /**
      * 获取聊天室列表
      * @returns any 成功

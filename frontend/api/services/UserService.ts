@@ -11,7 +11,10 @@ import type { User } from '../models/User';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class UserService {
-    constructor(public readonly httpRequest: BaseHttpRequest) {}
+    public readonly httpRequest: BaseHttpRequest;
+    constructor(httpRequest: BaseHttpRequest) {
+        this.httpRequest = httpRequest;
+    }
     /**
      * 用户注册
      * @param requestBody

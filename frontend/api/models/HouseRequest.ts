@@ -17,5 +17,6 @@ export type HouseRequest = {
     decoration: DecorationType;
     facilities?: Array<string>;
     description?: string;
+    images?: Array<string>;
 };
 

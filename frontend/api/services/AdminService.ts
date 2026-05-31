@@ -11,7 +11,10 @@ import type { UserRole } from '../models/UserRole';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class AdminService {
-    constructor(public readonly httpRequest: BaseHttpRequest) {}
+    public readonly httpRequest: BaseHttpRequest;
+    constructor(httpRequest: BaseHttpRequest) {
+        this.httpRequest = httpRequest;
+    }
     /**
      * 获取用户列表（管理员）
      * @param page

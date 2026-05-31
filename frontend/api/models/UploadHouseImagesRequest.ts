@@ -3,6 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type UploadHouseImagesRequest = {
-    files?: Array<Blob>;
+    files: Array<Blob>;
 };
 

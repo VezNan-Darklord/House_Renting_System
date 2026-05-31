@@ -1,12 +1,32 @@
-import { HomeOutlined, StarOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { DownOutlined, HomeOutlined } from "@ant-design/icons";
+import { Button, Dropdown, Space, type MenuProps } from "antd";
 import { useState } from "react";
 import { useUserContext } from "../userContext";
 import LoginPopWindow from "../index/login/loginPopWindow";
+import { useNavigate } from "react-router";
 
 export default function Header() {
     const { isLoggedIn } = useUserContext();
     const [loginOpen, setLoginOpen] = useState(false);
+    const userInfo = useUserContext();
+    const canPublish = isLoggedIn && (userInfo.user?.role === "landlord" || userInfo.user?.role === "admin");
+    const navigate = useNavigate();
+
+    const items: MenuProps['items'] = [
+        {
+            label: '个人中心',
+            key: 'user',
+            onClick: () => navigate("/user")
+        },
+        {
+            label: '退出登录',
+            key: 'logout',
+            onClick: () => { 
+                userInfo.clearAuth();
+                navigate("/");
+            }
+        }
+    ]
 
     return (
         <header className="fixed left-0 top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-xl">
@@ -25,12 +45,19 @@ export default function Header() {
                         <div className="hidden items-center gap-3 lg:flex">
                             {isLoggedIn ? (
                                 <>
-                                    <Button type="text" icon={<StarOutlined />} className="text-slate-700!">
-                                        收藏
-                                    </Button>
-                                    <Button type="primary" shape="round" className="bg-slate-900! shadow-none!">
-                                        发布房源
-                                    </Button>
+                                    {canPublish && (
+                                        <Button type="primary" onClick={() => navigate("/house/publish")} shape="round" className="bg-slate-900! shadow-none!">
+                                            发布房源
+                                        </Button>
+                                    )}
+                                    <Dropdown menu={{ items }}>
+                                        <a onClick={(e) => e.preventDefault()}>
+                                            <Space>
+                                                {userInfo.user?.nickname|| "用户"}
+                                                <DownOutlined />
+                                            </Space>
+                                        </a>
+                                    </Dropdown>
                                 </>
                             ) : (
                                 <Button

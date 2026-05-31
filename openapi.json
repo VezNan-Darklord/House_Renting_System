@@ -1427,7 +1427,8 @@
           "deposit": { "type": "number", "minimum": 0 },
           "decoration": { "$ref": "#/components/schemas/DecorationType" },
           "facilities": { "type": "array", "items": { "type": "string" }, "default": [] },
-          "description": { "type": "string", "default": "" }
+          "description": { "type": "string", "default": "" },
+          "images": { "type": "array", "items": { "type": "string" }, "default": [] }
         },
         "required": [
           "address_province",
@@ -1456,7 +1457,8 @@
             "type": "array",
             "items": { "type": "string", "format": "binary" }
           }
-        }
+        },
+        "required": ["files"]
       },
       "HouseListItem": {
         "type": "object",
