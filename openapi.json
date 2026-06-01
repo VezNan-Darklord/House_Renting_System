@@ -517,6 +517,41 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": ["chat"],
+        "summary": "创建聊天室",
+        "operationId": "create_chat_room",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChatRoomRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/ChatRoom" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/chat/rooms/{room_id}/messages": {
@@ -1521,6 +1556,14 @@
           "page": { "type": "integer" },
           "page_size": { "type": "integer" }
         }
+      },
+      "CreateChatRoomRequest": {
+        "type": "object",
+        "properties": {
+          "house_id": { "type": "integer", "description": "房源ID" },
+          "landlord_id": { "type": "integer", "description": "房东ID" }
+        },
+        "required": ["house_id", "landlord_id"]
       },
       "CreateContractRequest": {
         "type": "object",

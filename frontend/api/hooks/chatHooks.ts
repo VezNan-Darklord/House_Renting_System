@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { rent } from "../instance";
+import type { CreateChatRoomRequest } from "../models/CreateChatRoomRequest";
 
 type ChatHistoryParams = {
     roomId: number;
@@ -20,5 +21,16 @@ export function useChatHistoryQuery(params?: ChatHistoryParams, enabled = true) 
         queryKey: ["chatHistory", params],
         queryFn: () => rent.chat.getChatHistory(params?.roomId as number, params?.page, params?.pageSize),
         enabled: Boolean(params?.roomId) && enabled,
+    });
+}
+
+export function useCreateChatRoomMutation() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: CreateChatRoomRequest) => rent.chat.createChatRoom(data),
+        onSuccess: () => {
+            // 创建成功后刷新聊天室列表
+            queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
+        },
     });
 }

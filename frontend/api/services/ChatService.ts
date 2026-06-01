@@ -5,12 +5,30 @@
 import type { ApiResponse } from '../models/ApiResponse';
 import type { ChatHistoryResponse } from '../models/ChatHistoryResponse';
 import type { ChatRoom } from '../models/ChatRoom';
+import type { CreateChatRoomRequest } from '../models/CreateChatRoomRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class ChatService {
     public readonly httpRequest: BaseHttpRequest;
     constructor(httpRequest: BaseHttpRequest) {
         this.httpRequest = httpRequest;
+    }
+    /**
+     * 创建聊天室
+     * @param requestBody
+     * @returns any 成功
+     * @throws ApiError
+     */
+    public createChatRoom(
+        requestBody: CreateChatRoomRequest,
+    ): CancelablePromise<(ApiResponse & {
+        data?: ChatRoom;
+    })> {
+        return this.httpRequest.request({
+            method: 'POST',
+            url: '/chat/rooms',
+            body: requestBody,
+        });
     }
     /**
      * 获取聊天室列表

@@ -268,6 +268,11 @@ class WSReceiveMessagePayload(BaseModel):
     room_id: int
     message: ChatMessage
 
+class CreateChatRoomRequest(BaseModel):
+    """创建聊天室请求"""
+    house_id: int = Field(description="房源ID")
+    landlord_id: int = Field(description="房东ID")
+
 # ==================== 合同模块 ====================
 
 class Contract(BaseModel):

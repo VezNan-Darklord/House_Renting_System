@@ -1,13 +1,106 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.database import get_db
-from models.schemas import ChatRoom, ChatMessage, ChatHistoryResponse, ApiResponse
+from models.schemas import ChatRoom, ChatMessage, ChatHistoryResponse, ApiResponse, CreateChatRoomRequest
 from models.user_model import UserModel
 from models.house_model import HouseModel
 from models.chat_model import ChatRoomModel, ChatMessageModel
 from utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["聊天"])
+
+
+@router.post("/chat/rooms", summary="创建聊天室")
+def create_chat_room(
+        request: CreateChatRoomRequest,
+        current_user: UserModel = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    """创建聊天室（租客与房东之间的聊天）"""
+    house_id = request.house_id
+    landlord_id = request.landlord_id
+
+    # 验证房源是否存在
+    house = db.query(HouseModel).filter(
+        HouseModel.id == house_id,
+        HouseModel.is_deleted == False
+    ).first()
+
+    if not house:
+        raise HTTPException(status_code=404, detail="房源不存在")
+
+    # 验证房东是否存在
+    landlord = db.query(UserModel).filter(
+        UserModel.id == landlord_id,
+        UserModel.role == 'landlord'
+    ).first()
+
+    if not landlord:
+        raise HTTPException(status_code=404, detail="房东不存在")
+
+    # 检查是否已经存在相同的聊天室
+    existing_room = db.query(ChatRoomModel).filter(
+        ChatRoomModel.house_id == house_id,
+        ChatRoomModel.tenant_id == current_user.id,
+        ChatRoomModel.landlord_id == landlord_id
+    ).first()
+
+    if existing_room:
+        # 如果已存在，返回现有聊天室
+        other_user_nickname = landlord.nickname
+        last_message = db.query(ChatMessageModel).filter(
+            ChatMessageModel.room_id == existing_room.id
+        ).order_by(ChatMessageModel.created_at.desc()).first()
+
+        chat_room = ChatRoom(
+            id=existing_room.id,
+            house_id=existing_room.house_id,
+            house_info=f"{house.address_city}{house.address_district}" if house else "",
+            tenant_id=existing_room.tenant_id,
+            landlord_id=existing_room.landlord_id,
+            other_user_nickname=other_user_nickname,
+            last_message=last_message.content if last_message else None,
+            last_message_time=last_message.created_at if last_message else None,
+            created_at=existing_room.created_at
+        )
+
+        return ApiResponse(
+            code=200,
+            message="聊天室已存在",
+            data=chat_room.dict()
+        )
+
+    # 创建新的聊天室
+    new_room = ChatRoomModel(
+        house_id=house_id,
+        tenant_id=current_user.id,
+        landlord_id=landlord_id
+    )
+
+    db.add(new_room)
+    db.commit()
+    db.refresh(new_room)
+
+    # 获取房东信息
+    other_user_nickname = landlord.nickname
+
+    chat_room = ChatRoom(
+        id=new_room.id,
+        house_id=new_room.house_id,
+        house_info=f"{house.address_city}{house.address_district}" if house else "",
+        tenant_id=new_room.tenant_id,
+        landlord_id=new_room.landlord_id,
+        other_user_nickname=other_user_nickname,
+        last_message=None,
+        last_message_time=None,
+        created_at=new_room.created_at
+    )
+
+    return ApiResponse(
+        code=200,
+        message="聊天室创建成功",
+        data=chat_room.dict()
+    )
 
 
 @router.get("/chat/rooms", summary="获取聊天室列表")
