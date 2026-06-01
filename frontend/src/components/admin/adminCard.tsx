@@ -1,52 +1,34 @@
 import { Spin } from "antd";
 import {
-    DollarOutlined,
-    FileTextOutlined,
-    HomeOutlined,
     IssuesCloseOutlined,
-    ToolOutlined,
-    UserOutlined,
+    TeamOutlined,
     VerticalRightOutlined,
 } from "@ant-design/icons";
-import { useUserContext } from "../userContext";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useProfileQuery } from "../../../api/hooks/userHooks";
-import AccountInfo from "./accountInfo";
-import RentHouseManage from "./rentHouseManage";
-import RentRecords from "./rentRecords";
-import RepairWorkOrder from "./repairWorkOrder";
-import Complaint from "./complaint";
+import UserManagement from "./userManagement";
+import AdminComplaint from "./adminComplaint";
+import { useUserContext } from "../userContext";
 
 
 
-type baseInfoItem = 'account' | 'role' | 'rent' | 'repair' | 'complaint';
+type AdminPage = "users" | "complaint";
 
-export default function UserCard() {
+export default function AdminCard() {
     const { isLoggedIn } = useUserContext();
-
     const navigate = useNavigate();
     const profileQuery = useProfileQuery(isLoggedIn);
     const profile = profileQuery.data?.data;
     const role = profile?.role;
 
-    const [baseInfo, setBaseInfo] = useState<baseInfoItem>('account');
-
+    const [page, setPage] = useState<AdminPage>("users");
 
     const sideItems = [
         { key: "back", label: "返回首页", icon: <VerticalRightOutlined />, onClick: () => navigate("/") },
-        { key: "account", label: "账号信息", icon: <UserOutlined />, onClick: () => setBaseInfo('account') },
-        {
-            key: "role",
-            label: role === "landlord" ? "房屋管理" : "租住信息",
-            icon: role === "landlord" ? <HomeOutlined /> : <FileTextOutlined />,
-            onClick: () => setBaseInfo('role'),
-        },
-        { key: "rent", label: "租金记录", icon: <DollarOutlined />, onClick: () => setBaseInfo('rent') },
-        { key: "repair", label: "维修工单", icon: <ToolOutlined />, onClick: () => setBaseInfo('repair') },
-        { key: "complaint", label: "我的投诉", icon: <IssuesCloseOutlined />, onClick: () => setBaseInfo('complaint') },
+        { key: "users", label: "用户管理", icon: <TeamOutlined />, onClick: () => setPage("users") },
+        { key: "complaint", label: "投诉处理", icon: <IssuesCloseOutlined />, onClick: () => setPage("complaint") },
     ];
-
 
     if (!isLoggedIn) {
         return (
@@ -54,7 +36,7 @@ export default function UserCard() {
                 <main className="mx-auto w-full max-w-400 px-4 pb-24 pt-8 sm:px-6 lg:px-8">
                     <section className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
                         <h2 className="text-xl font-semibold text-slate-900">请先登录</h2>
-                        <p className="mt-2 text-sm text-slate-500">登录后可查看个人信息与合同记录</p>
+                        <p className="mt-2 text-sm text-slate-500">登录后可进入管理员后台</p>
                     </section>
                 </main>
             </div>
@@ -71,21 +53,36 @@ export default function UserCard() {
         );
     }
 
+    if (role && role !== "admin") {
+        return (
+            <div className="min-h-screen bg-[#faf7f2] text-slate-900">
+                <main className="mx-auto w-full max-w-400 px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+                    <section className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                        <h2 className="text-xl font-semibold text-slate-900">无访问权限</h2>
+                        <p className="mt-2 text-sm text-slate-500">仅管理员可访问此页面</p>
+                    </section>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
             <main className="mx-auto w-full max-w-400 px-4 pb-24 pt-8 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
                     <aside className="rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-                        <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Settings</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                            Admin
+                        </div>
                         <div className="mt-5 space-y-2">
                             {sideItems.map((item) => (
                                 <div
                                     key={item.key}
                                     className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${
-                                        baseInfo === item.key
+                                        page === item.key
                                             ? "bg-orange-50 text-orange-600"
                                             : "text-slate-600 hover:bg-slate-50"
-                                        }`}
+                                    }`}
                                     onClick={item.onClick}
                                 >
                                     <span className="text-base">{item.icon}</span>
@@ -94,12 +91,8 @@ export default function UserCard() {
                             ))}
                         </div>
                     </aside>
-                    { baseInfo === 'account' && <AccountInfo /> }
-                    { baseInfo === 'role' && <RentHouseManage /> }
-                    { baseInfo === 'rent' && <RentRecords /> }
-                    { baseInfo === 'repair' && <RepairWorkOrder /> }
-                    { baseInfo === 'complaint' && <Complaint /> }
-
+                    {page === "users" ? <UserManagement /> : null}
+                    {page === "complaint" ? <AdminComplaint /> : null}
                 </div>
             </main>
         </div>

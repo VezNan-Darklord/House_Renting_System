@@ -4,13 +4,13 @@ import {
     DatePicker,
     Form,
     Input,
-    Modal,
     Select,
     message,
 } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCreateContractMutation } from "../../../api/hooks/contractHooks";
+import PopWindow from "./PopWindow";
 
 const LEASE_TERM_OPTIONS = [
     { label: "6 个月", value: 6 },
@@ -83,18 +83,11 @@ export default function DefaultContract({
     const hasHouseContext = Boolean(houseInfo) || monthlyRent !== undefined;
 
     return (
-        <Modal
+        <PopWindow
             open={open}
-            onCancel={onClose}
-            title={
-                <div className="flex items-center gap-2">
-                    <HomeOutlined className="text-orange-500" />
-                    <span>申请租房</span>
-                </div>
-            }
-            footer={null}
-            width={560}
-            destroyOnClose
+            title="申请租房"
+            icon={<HomeOutlined className="text-orange-500" />}
+            onClose={onClose}
         >
             {hasHouseContext ? (
                 <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
@@ -169,6 +162,6 @@ export default function DefaultContract({
                     </Button>
                 </div>
             </Form>
-        </Modal>
+        </PopWindow>
     );
 }

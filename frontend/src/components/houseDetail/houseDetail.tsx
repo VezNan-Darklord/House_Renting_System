@@ -5,6 +5,7 @@ import { useHouseDetailQuery } from "../../../api/hooks/houseHooks";
 import type { DecorationType, HouseStatus, HouseType } from "../../../api";
 import Header from "../index/header";
 import { useProfileQuery } from "../../../api/hooks/userHooks";
+import { useState } from "react";
 
 const houseTypeLabels: Record<HouseType, string> = {
     apartment: "公寓",
@@ -61,8 +62,9 @@ export default function HouseDetail() {
     const deposit = house?.deposit;
     const statusLabel = house?.status ? statusLabels[house.status] : "";
     const imageList = house?.images ?? [];
-    const heroImage = imageList[0];
     const chatDisabled = createChatRoomMutation.isPending || !house?.id || !house?.landlord_id || house?.landlord_id === userInfo.data?.data?.id;
+
+    const [heroImage, setHeroImage] = useState<string | undefined>(imageList[0]);
 
     const handleStartChat = async () => {
         if (!house?.id || !house?.landlord_id) {
@@ -132,12 +134,13 @@ export default function HouseDetail() {
                                     </div>
                                     {imageList.length > 1 ? (
                                         <div className="grid grid-cols-5 gap-3">
-                                            {imageList.slice(0, 5).map((url, index) => (
+                                            {imageList.map((url, index) => (
                                                 <div
                                                     key={`${url}-${index}`}
                                                     className="overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100"
+                                                    onClick={() => setHeroImage(url)}
                                                 >
-                                                    <img src={url} alt={`房源图片 ${index + 1}`} className="h-20 w-full object-cover" />
+                                                    <img src={url} alt={`房源图片 ${index + 1}`} className="h-20 w-full object-cover cursor-pointer" />
                                                 </div>
                                             ))}
                                         </div>

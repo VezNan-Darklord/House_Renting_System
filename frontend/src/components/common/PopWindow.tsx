@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 type PopWindowProps = {
     open: boolean;
     title?: string;
+    icon?: ReactNode;
     onClose?: () => void;
     children: ReactNode;
 };
@@ -23,7 +24,7 @@ const ensurePortalRoot = () => {
     return root;
 };
 
-export default function PopWindow({ open, title, onClose, children }: PopWindowProps) {
+export default function PopWindow({ open, title, icon, onClose, children }: PopWindowProps) {
     const root = useMemo(() => ensurePortalRoot(), []);
 
     if (!open || !root) {
@@ -40,7 +41,7 @@ export default function PopWindow({ open, title, onClose, children }: PopWindowP
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="mb-4 flex items-start justify-between gap-4">
-                    {title ? <div className="text-lg font-semibold text-slate-900">{title}</div> : <span />}
+                    {icon ? <div className="text-lg font-semibold text-slate-900">{icon}&nbsp;{title}</div> : <span />}
                     {onClose ? (
                         <Button
                             type="text"

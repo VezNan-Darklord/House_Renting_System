@@ -150,7 +150,10 @@ export default function Publish() {
                             type="primary"
                             shape="round"
                             className="bg-orange-500! font-semibold! shadow-none!"
-                            onClick={() => form.submit()}
+                            onClick={() => {
+                                form.submit();
+                                navigate("/");
+                            }}
                             loading={createHouseMutation.isPending}
                         >
                             提交发布

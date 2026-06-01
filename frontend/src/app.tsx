@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router"
 import Index from "./components/index"
 import UserCard from "./components/personal/userCard"
+import AdminCard from "./components/admin/adminCard"
 import ChatRoom from "./components/chat/chatRoom"
 import Publish from "./components/publishHouse/publish"
 import AuthGuard from "./components/common/AuthGuard"
@@ -17,6 +18,15 @@ export default function App() {
             element: (
                 <AuthGuard>
                     <UserCard />
+                </AuthGuard>
+            ),
+            children: []
+        },
+        {
+            path: '/admin',
+            element: (
+                <AuthGuard>
+                    <AdminCard />
                 </AuthGuard>
             ),
             children: []

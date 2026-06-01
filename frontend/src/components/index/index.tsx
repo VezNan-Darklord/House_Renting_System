@@ -104,7 +104,7 @@ export default function Index() {
         isSearching
     );
 
-    const items = isSearching ? searchData?.data?.items ?? [] : listData?.data?.items ?? [];
+    const items = isSearching ? searchData?.data?.items?.filter(item=>item.status !== 'rented') ?? [] : listData?.data?.items?.filter(item=>item.status !== 'rented') ?? [];
     const isLoading = isSearching ? searchLoading : listLoading;
     const isError = isSearching ? searchError : listError;
 
