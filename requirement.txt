@@ -4,6 +4,9 @@ fastapi>=0.104.0,<1.0.0
 # ASGI 服务器
 uvicorn[standard]>=0.24.0,<1.0.0
 
+# Socket.IO 服务端
+python-socketio>=5.16.0,<6.0.0
+
 # ORM 数据库工具
 sqlalchemy>=2.0.0,<3.0.0
 

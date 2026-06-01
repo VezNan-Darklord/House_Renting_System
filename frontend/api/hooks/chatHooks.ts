@@ -24,9 +24,11 @@ export function useChatHistoryQuery(params?: ChatHistoryParams, enabled = true) 
     });
 }
 
+// 创建新的聊天
 export function useCreateChatRoomMutation() {
     const queryClient = useQueryClient();
     return useMutation({
+        mutationKey: ["createChatRoom"],
         mutationFn: (data: CreateChatRoomRequest) => rent.chat.createChatRoom(data),
         onSuccess: () => {
             // 创建成功后刷新聊天室列表

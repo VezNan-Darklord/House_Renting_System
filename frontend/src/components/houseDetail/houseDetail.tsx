@@ -1,9 +1,11 @@
-import { Divider, Empty, Skeleton } from "antd";
-import { useParams } from "react-router";
+import { Button, Divider, Empty, Skeleton, message } from "antd";
+import { useNavigate, useParams } from "react-router";
+import { useCreateChatRoomMutation } from "../../../api/hooks/chatHooks";
 import { useHouseDetailQuery } from "../../../api/hooks/houseHooks";
 import type { DecorationType, HouseStatus, HouseType } from "../../../api";
 import Header from "../index/header";
 import Sidebar from "../index/sidebar";
+import { useProfileQuery } from "../../../api/hooks/userHooks";
 
 const houseTypeLabels: Record<HouseType, string> = {
     apartment: "公寓",
@@ -35,12 +37,17 @@ const formatAddress = (parts: Array<string | undefined>) =>
 
 export default function HouseDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const houseId = Number(id);
     const isHouseIdValid = Number.isFinite(houseId);
+
     const { data, isLoading, isError } = useHouseDetailQuery(
         isHouseIdValid ? houseId : undefined,
         isHouseIdValid
     );
+    const userInfo = useProfileQuery();
+
+    const createChatRoomMutation = useCreateChatRoomMutation();
     const house = data?.data;
 
     const addressLine = house
@@ -56,6 +63,28 @@ export default function HouseDetail() {
     const statusLabel = house?.status ? statusLabels[house.status] : "";
     const imageList = house?.images ?? [];
     const heroImage = imageList[0];
+    const chatDisabled = createChatRoomMutation.isPending || !house?.id || !house?.landlord_id || house?.landlord_id === userInfo.data?.data?.id;
+
+    const handleStartChat = async () => {
+        if (!house?.id || !house?.landlord_id) {
+            message.error("房源信息不完整，无法创建聊天");
+            return;
+        }
+        try {
+            const response = await createChatRoomMutation.mutateAsync({
+                house_id: house.id,
+                landlord_id: house.landlord_id,
+            });
+            const roomId = response.data?.id;
+            if (!roomId) {
+                message.error("创建聊天室失败，请稍后重试");
+                return;
+            }
+            navigate(`/chat/${roomId}`);
+        } catch {
+            message.error("创建聊天室失败，请稍后重试");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#faf7f2] text-slate-900">
@@ -189,16 +218,32 @@ export default function HouseDetail() {
                                     </div>
 
                                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                                        <div className="text-xs font-medium uppercase tracking-[0.3em] text-orange-500">
-                                            房东信息
+                                        <div className="grid gap-4 md:grid-cols-[1fr_200px] md:items-center">
+                                            <div>
+                                                <div className="text-xs font-medium uppercase tracking-[0.3em] text-orange-500">
+                                                    房东信息
+                                                </div>
+                                                <div className="mt-3 text-lg font-semibold text-slate-900">
+                                                    {house.landlord_nickname ?? "房东"}
+                                                </div>
+                                                <div className="mt-1 text-sm text-slate-500">
+                                                    房东编号：{house.landlord_id ?? "-"}
+                                                </div>
+                                                <div className="mt-2 text-xs text-slate-400">
+                                                    房源编号：{house.id ?? "-"}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                className="h-14 w-full bg-orange-500! font-semibold! shadow-none! text-white!"
+                                                onClick={handleStartChat}
+                                                loading={createChatRoomMutation.isPending}
+                                                disabled={chatDisabled}
+                                            >
+                                                {chatDisabled ? "无法与自己聊天" : "联系房东"}
+                                            </Button>
                                         </div>
-                                        <div className="mt-3 text-lg font-semibold text-slate-900">
-                                            {house.landlord_nickname ?? "房东"}
-                                        </div>
-                                        <div className="mt-1 text-sm text-slate-500">
-                                            房东编号：{house.landlord_id ?? "-"}
-                                        </div>
-                                        <div className="mt-2 text-xs text-slate-400">房源编号：{house.id ?? "-"}</div>
                                     </div>
                                 </div>
                             </section>

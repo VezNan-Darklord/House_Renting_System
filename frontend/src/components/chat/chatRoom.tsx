@@ -28,12 +28,34 @@ const normalizeIncomingMessage = (payload: unknown): ChatMessage | null => {
     return payload as ChatMessage;
 };
 
+const getMessageTime = (value?: string) => {
+    if (!value) return null;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? null : time;
+};
+
+const isSameContent = (a: ChatMessage, b: ChatMessage) =>
+    Boolean(a.sender_id && b.sender_id && a.sender_id === b.sender_id && a.content === b.content);
+
+const isSimilarTime = (a?: string, b?: string, toleranceMs = 8000) => {
+    const timeA = getMessageTime(a);
+    const timeB = getMessageTime(b);
+    if (timeA === null || timeB === null) return false;
+    return Math.abs(timeA - timeB) <= toleranceMs;
+};
+
+const isDuplicateMessage = (candidate: ChatMessage, existing: ChatMessage) => {
+    if (candidate.id && existing.id && candidate.id === existing.id) return true;
+    if (isSameContent(candidate, existing) && isSimilarTime(candidate.created_at, existing.created_at)) return true;
+    return false;
+};
+
 export default function ChatRoom() {
     const { isLoggedIn, token } = useUserContext();
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: roomsResponse, isLoading: roomsLoading } = useChatRoomsQuery(isLoggedIn);
-    const rooms = useMemo(() => roomsResponse?.data?.rooms ?? [], [roomsResponse]);
+    const rooms = useMemo(() => roomsResponse?.data as ChatRoomType[] ?? [], [roomsResponse]);
     const selectedRoomId = Number.isFinite(Number(id)) ? Number(id) : null;
     const [inputValue, setInputValue] = useState("");
     const [isConnected, setIsConnected] = useState(false);
@@ -47,7 +69,7 @@ export default function ChatRoom() {
     const currentNickname = profile?.nickname ?? "我";
 
     const selectedRoom = useMemo(
-        () => rooms.find((room: { id: number | null; }) => room.id === selectedRoomId) ?? null,
+        () => rooms.find((room: ChatRoomType) => room.id === selectedRoomId) ?? null,
         [rooms, selectedRoomId]
     );
 
@@ -65,9 +87,13 @@ export default function ChatRoom() {
         const historyMessages = historyResponse?.data?.messages ?? [];
         const localMessages = localMessagesByRoom[selectedRoomId] ?? [];
         if (localMessages.length === 0) return historyMessages;
-        const historyIds = new Set(historyMessages.map((item) => item.id).filter(Boolean));
-        const mergedLocal = localMessages.filter((item) => !item.id || !historyIds.has(item.id));
-        return [...historyMessages, ...mergedLocal];
+        const merged = [...historyMessages];
+        localMessages.forEach((local) => {
+            if (!merged.some((existing) => isDuplicateMessage(local, existing))) {
+                merged.push(local);
+            }
+        });
+        return merged;
     }, [historyResponse?.data?.messages, localMessagesByRoom, selectedRoomId]);
 
     useEffect(() => {
@@ -88,7 +114,24 @@ export default function ChatRoom() {
             if (activeRoomRef.current && targetRoomId !== activeRoomRef.current) return;
             setLocalMessagesByRoom((prev) => ({
                 ...prev,
-                [targetRoomId]: [...(prev[targetRoomId] ?? []), message],
+                [targetRoomId]: (() => {
+                    const current = prev[targetRoomId] ?? [];
+                    if (current.some((existing) => isDuplicateMessage(message, existing))) {
+                        return current;
+                    }
+                    const optimisticIndex = current.findIndex(
+                        (existing) =>
+                            !existing.id &&
+                            isSameContent(existing, message) &&
+                            isSimilarTime(existing.created_at, message.created_at)
+                    );
+                    if (optimisticIndex >= 0) {
+                        const next = [...current];
+                        next[optimisticIndex] = message;
+                        return next;
+                    }
+                    return [...current, message];
+                })(),
             }));
         };
         socket.on("connect", handleConnect);
@@ -137,7 +180,6 @@ export default function ChatRoom() {
         if (!socket || !isConnected) return;
         const content = inputValue.trim();
         const outgoingMessage: ChatMessage = {
-            id: Date.now(),
             room_id: selectedRoomId,
             sender_id: currentUserId,
             sender_nickname: currentNickname,
@@ -308,12 +350,11 @@ export default function ChatRoom() {
                                         autoSize={{ minRows: 2, maxRows: 4 }}
                                         className="rounded-2xl border-slate-200 bg-slate-50!"
                                     />
-                                    <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
-                                        <div>使用昵称显示，支持简单文字聊天</div>
+                                    <div className="mt-3 flex items-center justify-end text-xs text-slate-400">
                                         <Button
                                             type="primary"
                                             shape="round"
-                                            className="bg-slate-900! shadow-none!"
+                                            className="bg-slate-900! shadow-none! text-white!"
                                             onClick={handleSend}
                                             disabled={!isConnected || !inputValue.trim()}
                                         >
