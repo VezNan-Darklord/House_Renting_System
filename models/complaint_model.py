@@ -7,6 +7,7 @@ class ComplaintModel(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    landlord_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     type = Column(Enum('house', 'landlord', 'other'), nullable=False)
     content = Column(Text, nullable=False)
     status = Column(Enum('pending', 'resolved'), default='pending')
@@ -14,4 +15,5 @@ class ComplaintModel(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    tenant = relationship("UserModel", backref="complaints")
+    tenant = relationship("UserModel", foreign_keys=[tenant_id], backref="complaints_as_tenant")
+    landlord = relationship("UserModel", foreign_keys=[landlord_id] ,backref="complaints_as_landlord")

@@ -11,6 +11,7 @@ from models.schemas import (
 )
 from models.user_model import UserModel
 from models.complaint_model import ComplaintModel
+from models.contract_model import ContractModel
 from utils.auth import get_current_user, get_current_tenant, get_current_admin
 from datetime import datetime
 
@@ -24,8 +25,28 @@ def create_complaint(
         db: Session = Depends(get_db)
 ):
     """租客提交投诉"""
+    # 如果投诉类型是房东问题，必须提供 landlord_id
+    if request.type == 'landlord' and not request.landlord_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="投诉房东时必须提供房东ID"
+        )
+
+    # 验证 landlord_id 是否存在且为房东角色
+    if request.landlord_id:
+        landlord = db.query(UserModel).filter(
+            UserModel.id == request.landlord_id,
+            UserModel.role == 'landlord'
+        ).first()
+        if not landlord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="指定的房东不存在"
+            )
+
     new_complaint = ComplaintModel(
         tenant_id=current_user.id,
+        landlord_id=request.landlord_id,
         type=request.type.value,
         content=request.content,
         status='pending',
@@ -64,22 +85,41 @@ def create_complaint(
 def get_complaint_list(
         page: int = 1,
         page_size: int = 10,
-        status: Optional[str] = None,
+        status_filter: Optional[str] = None,
         current_user: UserModel = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    """获取投诉列表"""
+    """获取投诉列表（根据角色返回不同数据）"""
     offset = (page - 1) * page_size
 
+    # 根据用户角色构建不同的查询
     if current_user.role == 'tenant':
+        # 租客：只能查看自己提交的投诉
         query = db.query(ComplaintModel).filter(ComplaintModel.tenant_id == current_user.id)
-    elif current_user.role == 'admin':
-        query = db.query(ComplaintModel)
-    else:
-        raise HTTPException(status_code=403, detail="房东无投诉功能")
 
-    if status:
-        query = query.filter(ComplaintModel.status == status)
+    elif current_user.role == 'landlord':
+        # 房东：查看与自己相关的投诉
+        # 1. 投诉对象是自己的投诉
+        # 2. 或者投诉人是与自己有合同关系的租客
+        related_tenant_ids = db.query(ContractModel.tenant_id).filter(
+            ContractModel.landlord_id == current_user.id
+        ).subquery()
+
+        query = db.query(ComplaintModel).filter(
+            (ComplaintModel.landlord_id == current_user.id) |
+            (ComplaintModel.tenant_id.in_(related_tenant_ids))
+        )
+
+    elif current_user.role == 'admin':
+        # 管理员：可以查看所有投诉
+        query = db.query(ComplaintModel)
+
+    else:
+        raise HTTPException(status_code=403, detail="无效的用户角色")
+
+    # 应用状态过滤
+    if status_filter:
+        query = query.filter(ComplaintModel.status == status_filter)
 
     total = query.count()
     complaints = query.order_by(
