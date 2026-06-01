@@ -20,6 +20,9 @@ importers:
       antd:
         specifier: ^5.26.0
         version: 5.29.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      dayjs:
+        specifier: ^1.11.20
+        version: 1.11.20
       openapi-typescript-codegen:
         specifier: ^0.30.0
         version: 0.30.0(@types/json-schema@7.0.15)

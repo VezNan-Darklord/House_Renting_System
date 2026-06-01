@@ -1,5 +1,5 @@
 import { Avatar, Button, Input } from "antd";
-import { UserOutlined, VerticalRightOutlined } from "@ant-design/icons";
+import { HomeOutlined, UserOutlined, VerticalRightOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useNavigate, useParams } from "react-router";
@@ -8,6 +8,7 @@ import { useProfileQuery } from "../../../api/hooks/userHooks";
 import { useUserContext } from "../userContext";
 import { getAccessToken } from "../../../api/instance";
 import type { ChatMessage, ChatRoom as ChatRoomType } from "../../../api";
+import DefaultContract from "../common/defaultContract";
 
 const SOCKET_URL = "http://127.0.0.1:8000";
 
@@ -66,6 +67,10 @@ export default function ChatRoom() {
     const profile = profileResponse?.data;
     const currentUserId = profile?.id;
     const currentNickname = profile?.nickname ?? "我";
+    const currentRole = profile?.role;
+    const isCurrentTenant = currentRole === "tenant";
+
+    const [contractModalOpen, setContractModalOpen] = useState(false);
 
     const selectedRoom = useMemo(
         () => rooms.find((room: ChatRoomType) => room.id === selectedRoomId) ?? null,
@@ -173,11 +178,12 @@ export default function ChatRoom() {
         messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }, [messages]);
 
-    const handleSend = () => {
-        if (!selectedRoomId || !inputValue.trim()) return;
+    const emitChatMessage = (rawContent: string): boolean => {
+        if (!selectedRoomId) return false;
         const socket = socketRef.current;
-        if (!socket || !isConnected) return;
-        const content = inputValue.trim();
+        if (!socket || !isConnected) return false;
+        const content = rawContent.trim();
+        if (!content) return false;
         const outgoingMessage: ChatMessage = {
             room_id: selectedRoomId,
             sender_id: currentUserId,
@@ -193,8 +199,31 @@ export default function ChatRoom() {
             room_id: selectedRoomId,
             content,
         });
-        setInputValue("");
+        return true;
     };
+
+    const handleSend = () => {
+        if (emitChatMessage(inputValue)) {
+            setInputValue("");
+        }
+    };
+
+    const handleApplyForRent = () => {
+        if (!selectedRoom || !selectedRoom.house_id || !selectedRoom.landlord_id) {
+            return;
+        }
+        if (!emitChatMessage("已申请租房")) {
+            return;
+        }
+        setContractModalOpen(true);
+    };
+
+    const canApplyForRent =
+        isCurrentTenant &&
+        Boolean(selectedRoom) &&
+        Boolean(selectedRoom?.house_id) &&
+        Boolean(selectedRoom?.landlord_id) &&
+        selectedRoom?.tenant_id === currentUserId;
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -349,7 +378,18 @@ export default function ChatRoom() {
                                         autoSize={{ minRows: 2, maxRows: 4 }}
                                         className="rounded-2xl border-slate-200 bg-slate-50!"
                                     />
-                                    <div className="mt-3 flex items-center justify-end text-xs text-slate-400">
+                                    <div className="mt-3 flex items-center justify-end gap-2 text-xs text-slate-400">
+                                        {isCurrentTenant ? (
+                                            <Button
+                                                shape="round"
+                                                icon={<HomeOutlined />}
+                                                className="border-orange-200! text-orange-600! shadow-none!"
+                                                onClick={handleApplyForRent}
+                                                disabled={!isConnected || !canApplyForRent}
+                                            >
+                                                申请租房
+                                            </Button>
+                                        ) : null}
                                         <Button
                                             type="primary"
                                             shape="round"
@@ -366,6 +406,12 @@ export default function ChatRoom() {
                     </section>
                 </div>
             </main>
+            <DefaultContract
+                open={contractModalOpen}
+                onClose={() => setContractModalOpen(false)}
+                houseId={selectedRoom?.house_id}
+                houseInfo={selectedRoom?.house_info}
+            />
         </div>
     );
 }

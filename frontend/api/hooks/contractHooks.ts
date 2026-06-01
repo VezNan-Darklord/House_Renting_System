@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rent } from "../instance";
 import type { ConfirmContractRequest, ContractStatus, CreateContractRequest } from "..";
 
@@ -32,15 +32,19 @@ export function useCreateContractMutation() {
 }
 
 export function useConfirmContractMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["contractConfirm"],
         mutationFn: (data: ConfirmContractRequest) => rent.contract.confirmContract(data),
+        onSuccess: ()=>queryClient.invalidateQueries({ queryKey: ["contractList"] }),
     });
 }
 
 export function useTerminateContractMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["contractTerminate"],
         mutationFn: (contractId: number) => rent.contract.terminateContract(contractId),
+        onSuccess: ()=> queryClient.invalidateQueries({ queryKey: ["contractList"] }),
     });
 }
