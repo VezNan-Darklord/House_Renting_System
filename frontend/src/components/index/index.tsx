@@ -1,23 +1,106 @@
 import HouseCard from "./houseCard";
 import { useHouseListQuery } from "../../../api/hooks/houseHooks";
 import { useSearchHousesQuery } from "../../../api/hooks/searchHooks";
-import { SearchOutlined } from "@ant-design/icons";
-import { Input, Button } from "antd";
+import { DownOutlined, SearchOutlined, UpOutlined } from "@ant-design/icons";
+import { Button, Input, InputNumber, Select } from "antd";
 import Sidebar from "./sidebar";
 import Header from "./header";
-import { useState } from "react";
- 
-export default function Index() { 
-    const [keywordInput, setKeywordInput] = useState("");
-    const [searchKeyword, setSearchKeyword] = useState("");
-    const isSearching = Boolean(searchKeyword);
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { DecorationType, HouseType } from "../../../api";
+import type { DefaultOptionType } from "antd/es/select";
+import { getRegionData } from "region-data";
+
+type RegionNode = {
+    name: string;
+    code: number;
+    children: RegionNode[];
+};
+
+type SearchFilters = {
+    keyword?: string;
+    layout?: string;
+    province?: string;
+    city?: string;
+    district?: string;
+    minRent?: number;
+    maxRent?: number;
+    minArea?: number;
+    maxArea?: number;
+    houseType?: HouseType;
+    decoration?: DecorationType;
+};
+
+const houseTypeOptions: DefaultOptionType[] = [
+    { label: "公寓", value: "apartment" },
+    { label: "住宅", value: "residential" },
+    { label: "别墅", value: "villa" },
+];
+
+const decorationOptions: DefaultOptionType[] = [
+    { label: "精装", value: "luxury" },
+    { label: "简装", value: "simple" },
+    { label: "毛坯", value: "rough" },
+];
+
+export default function Index() {  
+    const [draftFilters, setDraftFilters] = useState<SearchFilters>({});
+    const [activeFilters, setActiveFilters] = useState<SearchFilters>({});
+    const [isExpanded, setIsExpanded] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const regionData = useMemo<RegionNode[]>(() => getRegionData(), []);
+    const provinceOptions = useMemo(
+        () => regionData.map((province) => ({ label: province.name, value: province.name })),
+        [regionData]
+    );
+    const selectedProvince = useMemo(
+        () => regionData.find((province) => province.name === draftFilters.province),
+        [regionData, draftFilters.province]
+    );
+    const cityNodes = useMemo(() => selectedProvince?.children ?? [], [selectedProvince]);
+    const cityOptions = useMemo(
+        () => cityNodes.map((city) => ({ label: city.name, value: city.name })),
+        [cityNodes]
+    );
+    const selectedCity = useMemo(
+        () => cityNodes.find((city) => city.name === draftFilters.city),
+        [cityNodes, draftFilters.city]
+    );
+    const districtNodes = useMemo(() => {
+        if (!selectedProvince) return [];
+        const sourceCity = selectedCity ?? (cityNodes.length === 1 ? cityNodes[0] : undefined);
+        return sourceCity?.children ?? [];
+    }, [selectedProvince, selectedCity, cityNodes]);
+    const districtOptions = useMemo(
+        () => districtNodes.map((district) => ({ label: district.name, value: district.name })),
+        [districtNodes]
+    );
+    const isCityDisabled = !selectedProvince || cityNodes.length === 1;
+    const isDistrictDisabled =
+        !selectedProvince || (cityNodes.length > 1 && !selectedCity) || districtOptions.length === 0;
+    const cityPlaceholder = !selectedProvince
+        ? "请先选择省份"
+        : cityNodes.length === 1
+          ? "直辖市无需选择"
+          : "例如：杭州";
+    const districtPlaceholder = !selectedProvince
+        ? "请先选择省份"
+        : cityNodes.length > 1 && !selectedCity
+          ? "请先选择城市"
+          : "例如：西湖区";
+
+    const isSearching = useMemo(() => Object.keys(activeFilters).length > 0, [activeFilters]);
+    const searchParams = useMemo(
+        () => ({ page: 1, pageSize: 12, ...activeFilters }),
+        [activeFilters]
+    );
 
     const { data: listData, isLoading: listLoading, isError: listError } = useHouseListQuery(
         { page: 1, pageSize: 12 },
         !isSearching
     );
     const { data: searchData, isLoading: searchLoading, isError: searchError } = useSearchHousesQuery(
-        { page: 1, pageSize: 12, keyword: searchKeyword },
+        searchParams,
         isSearching
     );
 
@@ -25,9 +108,81 @@ export default function Index() {
     const isLoading = isSearching ? searchLoading : listLoading;
     const isError = isSearching ? searchError : listError;
 
-    const handleSearch = () => {
-        setSearchKeyword(keywordInput.trim());
+    const normalizeFilters = (filters: SearchFilters) => {
+        const normalized: SearchFilters = {};
+        if (filters.keyword?.trim()) normalized.keyword = filters.keyword.trim();
+        if (filters.layout?.trim()) normalized.layout = filters.layout.trim();
+        if (filters.province?.trim()) normalized.province = filters.province.trim();
+        if (filters.city?.trim()) normalized.city = filters.city.trim();
+        if (filters.district?.trim()) normalized.district = filters.district.trim();
+        if (filters.minRent !== undefined && filters.minRent !== null) {
+            normalized.minRent = filters.minRent;
+        }
+        if (filters.maxRent !== undefined && filters.maxRent !== null) {
+            normalized.maxRent = filters.maxRent;
+        }
+        if (filters.minArea !== undefined && filters.minArea !== null) {
+            normalized.minArea = filters.minArea;
+        }
+        if (filters.maxArea !== undefined && filters.maxArea !== null) {
+            normalized.maxArea = filters.maxArea;
+        }
+        if (filters.houseType) normalized.houseType = filters.houseType;
+        if (filters.decoration) normalized.decoration = filters.decoration;
+        return normalized;
     };
+
+    const applySearch = (filters: SearchFilters) => {
+        setActiveFilters(normalizeFilters(filters));
+    };
+
+    const scheduleSearch = (filters: SearchFilters) => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+        debounceRef.current = setTimeout(() => {
+            applySearch(filters);
+        }, 1000);
+    };
+
+    const updateDraftFilters = (
+        patch: Partial<SearchFilters>,
+        options?: { debounce?: boolean; immediate?: boolean }
+    ) => {
+        setDraftFilters((prev) => {
+            const next = { ...prev, ...patch };
+            if (options?.debounce) {
+                scheduleSearch(next);
+            } else if (options?.immediate) {
+                if (debounceRef.current) {
+                    clearTimeout(debounceRef.current);
+                    debounceRef.current = null;
+                }
+                applySearch(next);
+            }
+            return next;
+        });
+    };
+
+    const handleSearch = () => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+        }
+        applySearch(draftFilters);
+    };
+
+    const handleSidebarFilter = (patch: Partial<SearchFilters>) => {
+        updateDraftFilters(patch, { immediate: true });
+    };
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#faf7f2] text-slate-900">   
@@ -45,39 +200,214 @@ export default function Index() {
                                     prefix={<SearchOutlined className="text-slate-400" />}
                                     placeholder="请输入城市、小区、地铁站或房源关键词"
                                     className="px-0! text-base!"
-                                    value={keywordInput}
-                                    onChange={(event) => setKeywordInput(event.target.value)}
+                                    value={draftFilters.keyword ?? ""}
+                                    onChange={(event) =>
+                                        updateDraftFilters(
+                                            { keyword: event.target.value },
+                                            { debounce: true }
+                                        )
+                                    }
                                     onPressEnter={handleSearch}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-3 lg:w-90 lg:grid-cols-3">
-                                <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <div className="text-xs font-medium text-slate-500">城市</div>
-                                    <div className="mt-1 text-sm font-semibold text-slate-900">杭州</div>
-                                </div>
-                                <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <div className="text-xs font-medium text-slate-500">租金</div>
-                                    <div className="mt-1 text-sm font-semibold text-slate-900">不限</div>
-                                </div>
+                            <div className="flex items-center gap-2">
                                 <Button
                                     size="large"
-                                    shape="round"
                                     type="primary"
-                                    className="h-full min-h-16 bg-orange-500! font-semibold! shadow-none!"
+                                    className="h-full min-h-10 font-semibold! shadow-none!"
                                     onClick={handleSearch}
                                 >
                                     搜索
                                 </Button>
+                                <Button
+                                    size="large"
+                                    type="default"
+                                    className="h-full min-h-16 border-slate-200 font-medium! text-slate-600! border-none!"
+                                    onClick={() => setIsExpanded((prev) => !prev)}
+                                >
+                                    {isExpanded ? <UpOutlined /> : <DownOutlined />}
+                                </Button>
                             </div>
                         </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {['地铁房', '近商圈', '整租', '合租', '可短租', '拎包入住', '朝南', '精装'].map((item) => (
-                                <Button key={item} shape="round" className="border-slate-200 text-slate-600 shadow-none">
-                                    {item}
-                                </Button>
-                            ))}
+                        {isExpanded ? (
+                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">户型</div>
+                                <Input
+                                    variant="borderless"
+                                    placeholder="例如：2室1厅"
+                                    value={draftFilters.layout ?? ""}
+                                    onChange={(event) =>
+                                        updateDraftFilters(
+                                            { layout: event.target.value },
+                                            { debounce: true }
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">省份</div>
+                                <Select
+                                    options={provinceOptions}
+                                    placeholder="例如：浙江省"
+                                    allowClear
+                                    showSearch
+                                    optionFilterProp="label"
+                                    value={draftFilters.province}
+                                    onChange={(value) => {
+                                        const nextProvince = regionData.find(
+                                            (province) => province.name === value
+                                        );
+                                        const nextCity =
+                                            nextProvince?.children?.length === 1
+                                                ? nextProvince.children[0].name
+                                                : undefined;
+                                        updateDraftFilters(
+                                            {
+                                                province: value,
+                                                city: nextCity,
+                                                district: undefined,
+                                            },
+                                            { immediate: true }
+                                        );
+                                    }}
+                                    filterOption={(input, option) =>
+                                        (option?.label ?? "").toString().includes(input)
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">城市</div>
+                                <Select
+                                    options={cityOptions}
+                                    placeholder={cityPlaceholder}
+                                    allowClear
+                                    showSearch
+                                    optionFilterProp="label"
+                                    value={draftFilters.city}
+                                    disabled={isCityDisabled}
+                                    onChange={(value) =>
+                                        updateDraftFilters(
+                                            {
+                                                city: value,
+                                                district: undefined,
+                                            },
+                                            { immediate: true }
+                                        )
+                                    }
+                                    filterOption={(input, option) =>
+                                        (option?.label ?? "").toString().includes(input)
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">区/县</div>
+                                <Select
+                                    options={districtOptions}
+                                    placeholder={districtPlaceholder}
+                                    allowClear
+                                    showSearch
+                                    optionFilterProp="label"
+                                    value={draftFilters.district}
+                                    disabled={isDistrictDisabled}
+                                    onChange={(value) =>
+                                        updateDraftFilters({ district: value }, { immediate: true })
+                                    }
+                                    filterOption={(input, option) =>
+                                        (option?.label ?? "").toString().includes(input)
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">房屋类型</div>
+                                <Select
+                                    allowClear
+                                    showSearch
+                                    placeholder="不限"
+                                    optionFilterProp="label"
+                                    options={houseTypeOptions}
+                                    value={draftFilters.houseType}
+                                    onChange={(value) =>
+                                        updateDraftFilters({ houseType: value }, { immediate: true })
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">装修情况</div>
+                                <Select
+                                    allowClear
+                                    showSearch
+                                    placeholder="不限"
+                                    optionFilterProp="label"
+                                    options={decorationOptions}
+                                    value={draftFilters.decoration}
+                                    onChange={(value) =>
+                                        updateDraftFilters({ decoration: value }, { immediate: true })
+                                    }
+                                />
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">租金区间</div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <InputNumber
+                                        className="w-full"
+                                        min={0}
+                                        placeholder="最低"
+                                        value={draftFilters.minRent}
+                                        onChange={(value) =>
+                                            updateDraftFilters(
+                                                { minRent: value ?? undefined },
+                                                { immediate: true }
+                                            )
+                                        }
+                                    />
+                                    <span className="text-xs text-slate-400">-</span>
+                                    <InputNumber
+                                        className="w-full"
+                                        min={0}
+                                        placeholder="最高"
+                                        value={draftFilters.maxRent}
+                                        onChange={(value) =>
+                                            updateDraftFilters(
+                                                { maxRent: value ?? undefined },
+                                                { immediate: true }
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-medium text-slate-500">面积区间</div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <InputNumber
+                                        className="w-full"
+                                        min={0}
+                                        placeholder="最小㎡"
+                                        value={draftFilters.minArea}
+                                        onChange={(value) =>
+                                            updateDraftFilters(
+                                                { minArea: value ?? undefined },
+                                                { immediate: true }
+                                            )
+                                        }
+                                    />
+                                    <span className="text-xs text-slate-400">-</span>
+                                    <InputNumber
+                                        className="w-full"
+                                        min={0}
+                                        placeholder="最大㎡"
+                                        value={draftFilters.maxArea}
+                                        onChange={(value) =>
+                                            updateDraftFilters(
+                                                { maxArea: value ?? undefined },
+                                                { immediate: true }
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
                         </div>
+                        ) : null}
                     </div>
                 </div>
                 <section className="mb-10">
@@ -102,7 +432,15 @@ export default function Index() {
                     ) : null}
                 </section>
             </main>
-            <Sidebar />
+            <Sidebar
+                activeFilters={{
+                    minRent: draftFilters.minRent,
+                    maxRent: draftFilters.maxRent,
+                    minArea: draftFilters.minArea,
+                    maxArea: draftFilters.maxArea,
+                }}
+                onFilter={handleSidebarFilter}
+            />
         </div>
     )
 }

@@ -4,11 +4,16 @@ import type { UploadFile, UploadProps } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router";
 import Header from "../index/header";
-import Sidebar from "../index/sidebar";
 import { useCreateHouseMutation, useUploadHouseImagesMutation } from "../../../api/hooks/houseHooks";
 import type { DecorationType, HouseRequest, HouseType } from "../../../api";
+import { getRegionData } from "region-data";
 
 type PublishFormValues = Omit<HouseRequest, "images">;
+type RegionNode = {
+    name: string;
+    code: number;
+    children: RegionNode[];
+};
 
 const houseTypeOptions: { label: string; value: HouseType }[] = [
     { label: "公寓", value: "apartment" },
@@ -29,6 +34,48 @@ export default function Publish() {
     const uploadMutation = useUploadHouseImagesMutation();
     const createHouseMutation = useCreateHouseMutation();
     const navigate = useNavigate();
+    const regionData = useMemo<RegionNode[]>(() => getRegionData(), []);
+    const selectedProvinceName = Form.useWatch("address_province", form);
+    const selectedCityName = Form.useWatch("address_city", form);
+    const selectedProvince = useMemo(
+        () => regionData.find((province) => province.name === selectedProvinceName),
+        [regionData, selectedProvinceName]
+    );
+    const cityNodes = useMemo(() => selectedProvince?.children ?? [], [selectedProvince]);
+    const cityOptions = useMemo(
+        () => cityNodes.map((city) => ({ label: city.name, value: city.name })),
+        [cityNodes]
+    );
+    const selectedCity = useMemo(
+        () => cityNodes.find((city) => city.name === selectedCityName),
+        [cityNodes, selectedCityName]
+    );
+    const districtNodes = useMemo(() => {
+        if (!selectedProvince) return [];
+        const sourceCity = selectedCity ?? (cityNodes.length === 1 ? cityNodes[0] : undefined);
+        return sourceCity?.children ?? [];
+    }, [selectedProvince, selectedCity, cityNodes]);
+    const districtOptions = useMemo(
+        () => districtNodes.map((district) => ({ label: district.name, value: district.name })),
+        [districtNodes]
+    );
+    const provinceOptions = useMemo(
+        () => regionData.map((province) => ({ label: province.name, value: province.name })),
+        [regionData]
+    );
+    const isCityDisabled = !selectedProvince || cityNodes.length === 1;
+    const isDistrictDisabled =
+        !selectedProvince || (cityNodes.length > 1 && !selectedCity) || districtOptions.length === 0;
+    const cityPlaceholder = !selectedProvince
+        ? "请先选择省份"
+        : cityNodes.length === 1
+          ? "直辖市无需选择"
+          : "例如：杭州市";
+    const districtPlaceholder = !selectedProvince
+        ? "请先选择省份"
+        : cityNodes.length > 1 && !selectedCity
+          ? "请先选择城市"
+          : "例如：西湖区";
 
     const imageUrls = useMemo(
         () =>
@@ -125,21 +172,66 @@ export default function Publish() {
                                     name="address_province"
                                     rules={[{ required: true, message: "请输入省份" }]}
                                 >
-                                    <Input placeholder="例如：浙江省" />
+                                    <Select
+                                        options={provinceOptions}
+                                        placeholder="例如：浙江省"
+                                        allowClear
+                                        showSearch
+                                        optionFilterProp="label"
+                                        onChange={(value) => {
+                                            const nextProvince = regionData.find(
+                                                (province) => province.name === value
+                                            );
+                                            const nextCity =
+                                                nextProvince?.children?.length === 1
+                                                    ? nextProvince.children[0].name
+                                                    : undefined;
+                                            form.setFieldsValue({
+                                                address_city: nextCity,
+                                                address_district: undefined,
+                                            });
+                                        }}
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? "").toString().includes(input)
+                                        }
+                                    />
                                 </Form.Item>
                                 <Form.Item
                                     label="城市"
                                     name="address_city"
                                     rules={[{ required: true, message: "请输入城市" }]}
                                 >
-                                    <Input placeholder="例如：杭州市" />
+                                    <Select
+                                        options={cityOptions}
+                                        placeholder={cityPlaceholder}
+                                        allowClear
+                                        showSearch
+                                        optionFilterProp="label"
+                                        disabled={isCityDisabled}
+                                        onChange={() => {
+                                            form.setFieldsValue({ address_district: undefined });
+                                        }}
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? "").toString().includes(input)
+                                        }
+                                    />
                                 </Form.Item>
                                 <Form.Item
                                     label="区/县"
                                     name="address_district"
                                     rules={[{ required: true, message: "请输入区/县" }]}
                                 >
-                                    <Input placeholder="例如：西湖区" />
+                                    <Select
+                                        options={districtOptions}
+                                        placeholder={districtPlaceholder}
+                                        allowClear
+                                        showSearch
+                                        optionFilterProp="label"
+                                        disabled={isDistrictDisabled}
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? "").toString().includes(input)
+                                        }
+                                    />
                                 </Form.Item>
                             </div>
                             <Form.Item
@@ -242,7 +334,6 @@ export default function Publish() {
                     </Form>
                 </div>
             </main>
-            <Sidebar />
         </div>
     );
 }

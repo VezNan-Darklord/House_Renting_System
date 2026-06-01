@@ -17,11 +17,6 @@ export default function Header() {
 
     const items: MenuProps['items'] = [
         {
-            label: '个人中心',
-            key: 'user',
-            onClick: () => navigate("/user")
-        },
-        {
             label: '退出登录',
             key: 'logout',
             onClick: () => { 

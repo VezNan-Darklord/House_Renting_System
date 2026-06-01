@@ -4,7 +4,6 @@ import { useCreateChatRoomMutation } from "../../../api/hooks/chatHooks";
 import { useHouseDetailQuery } from "../../../api/hooks/houseHooks";
 import type { DecorationType, HouseStatus, HouseType } from "../../../api";
 import Header from "../index/header";
-import Sidebar from "../index/sidebar";
 import { useProfileQuery } from "../../../api/hooks/userHooks";
 
 const houseTypeLabels: Record<HouseType, string> = {
@@ -258,7 +257,6 @@ export default function HouseDetail() {
                     ) : null}
                 </div>
             </main>
-            <Sidebar />
         </div>
     );
 }

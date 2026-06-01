@@ -1,5 +1,4 @@
-import { HeartOutlined } from "@ant-design/icons";
-import { Button, Divider, Tooltip } from "antd";
+import { Button, Divider } from "antd";
 import type { HouseListItem } from "../../../api";
 
 type HouseCardProps = {
@@ -49,9 +48,6 @@ export default function HouseCard({ index, item }: HouseCardProps) {
                         </h3>
                         <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
                     </div>
-                    <Tooltip title="收藏">
-                        <Button type="text" shape="circle" icon={<HeartOutlined />} className="shrink-0 text-slate-400 shadow-none" />
-                    </Tooltip>
                 </div>
 
                 <Divider className="my-0! border-slate-200!" />

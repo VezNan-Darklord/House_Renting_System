@@ -19,6 +19,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router": "^7.15.0",
+    "region-data": "^1.2.3",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   },

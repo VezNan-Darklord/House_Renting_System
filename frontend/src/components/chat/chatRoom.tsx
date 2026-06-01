@@ -3,7 +3,6 @@ import { UserOutlined, VerticalRightOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useNavigate, useParams } from "react-router";
-import Sidebar from "../index/sidebar";
 import { useChatHistoryQuery, useChatRoomsQuery } from "../../../api/hooks/chatHooks";
 import { useProfileQuery } from "../../../api/hooks/userHooks";
 import { useUserContext } from "../userContext";
@@ -367,7 +366,6 @@ export default function ChatRoom() {
                     </section>
                 </div>
             </main>
-            <Sidebar />
         </div>
     );
 }

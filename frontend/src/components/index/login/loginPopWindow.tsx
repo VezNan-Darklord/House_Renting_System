@@ -5,6 +5,7 @@ import PopWindow from "../../common/PopWindow";
 import { useLoginMutation } from "../../../../api/hooks/userHooks";
 import { useUserContext } from "../../userContext";
 import RegisterPopWindow from "./registerPopWindow";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LoginPopWindowProps = {
     open: boolean;
@@ -14,6 +15,7 @@ type LoginPopWindowProps = {
 type AuthMode = "login" | "register";
 
 const LoginPanel = ({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: () => void }) => {
+    const queryClient = useQueryClient();
     const { setAuth } = useUserContext();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -30,8 +32,9 @@ const LoginPanel = ({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: 
             {
                 onSuccess: (response) => {
                     if (response.data?.token) {
-                        setAuth(response.data.token, response.data.user);
+                        setAuth(response.data.token);
                         setPassword("");
+                        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
                         onSuccess();
                         message.success("登录成功");
                     } else {
