@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rent } from "../instance";
 import type { RepairRequest, RepairStatus, UpdateRepairStatusRequest } from "..";
 
@@ -32,9 +32,11 @@ export function useCreateRepairMutation() {
 }
 
 export function useUpdateRepairStatusMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["repairUpdateStatus"],
         mutationFn: (data: { repairId: number; data: UpdateRepairStatusRequest }) =>
             rent.repair.updateRepairStatus(data.repairId, data.data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["repairList"] }),
     });
 }

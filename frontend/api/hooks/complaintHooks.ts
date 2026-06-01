@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rent } from "../instance";
 import type { ComplaintRequest, ComplaintStatus, HandleComplaintRequest } from "..";
 
@@ -24,8 +24,10 @@ export function useCreateComplaintMutation() {
 }
 
 export function useHandleComplaintMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["complaintHandle"],
         mutationFn: (data: HandleComplaintRequest) => rent.complaint.handleComplaint(data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["complaintList"] }),
     });
 }

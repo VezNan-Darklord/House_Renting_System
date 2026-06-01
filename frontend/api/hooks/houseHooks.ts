@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rent } from "../instance";
 import type { HouseRequest, HouseStatus, UpdateHouseStatusRequest, UploadHouseImagesRequest } from "..";
 
@@ -25,24 +25,30 @@ export function useHouseDetailQuery(houseId?: number, enabled = true) {
 }
 
 export function useCreateHouseMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["houseCreate"],
         mutationFn: (data: HouseRequest) => rent.house.createHouse(data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["houseList"] }),
     });
 }
 
 export function useUpdateHouseMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["houseUpdate"],
         mutationFn: (data: { houseId: number; data: HouseRequest }) =>
             rent.house.updateHouse(data.houseId, data.data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["houseList"] }),
     });
 }
 
 export function useDeleteHouseMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationKey: ["houseDelete"],
         mutationFn: (houseId: number) => rent.house.deleteHouse(houseId),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["houseList"] }),
     });
 }
 
