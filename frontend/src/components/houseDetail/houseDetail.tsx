@@ -64,7 +64,7 @@ export default function HouseDetail() {
     const imageList = house?.images ?? [];
     const chatDisabled = createChatRoomMutation.isPending || !house?.id || !house?.landlord_id || house?.landlord_id === userInfo.data?.data?.id;
 
-    const [heroImage, setHeroImage] = useState<string | undefined>(imageList[0]);
+    const [heroImage, setHeroImage] = useState<string | undefined>(imageList?.[0]);
 
     const handleStartChat = async () => {
         if (!house?.id || !house?.landlord_id) {
@@ -120,17 +120,13 @@ export default function HouseDetail() {
                             <section className="grid gap-6 lg:grid-cols-[2fr_1.2fr]">
                                 <div className="space-y-4">
                                     <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-100">
-                                        {heroImage ? (
-                                            <img
-                                                src={heroImage}
-                                                alt={`房源 ${house.id ?? ""}`}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-90 items-center justify-center text-sm text-slate-400">
-                                                暂无房源图片
-                                            </div>
-                                        )}
+                                        
+                                        <img
+                                            src={heroImage ?? imageList[0]}
+                                            alt={`房源 ${house.id ?? ""}`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                       
                                     </div>
                                     {imageList.length > 1 ? (
                                         <div className="grid grid-cols-5 gap-3">
