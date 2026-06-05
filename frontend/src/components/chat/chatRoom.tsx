@@ -1,6 +1,7 @@
 import { Avatar, Button, Input } from "antd";
 import { HomeOutlined, UserOutlined, VerticalRightOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { io, type Socket } from "socket.io-client";
 import { useNavigate, useParams } from "react-router";
 import { useChatHistoryQuery, useChatRoomsQuery } from "../../../api/hooks/chatHooks";
@@ -54,6 +55,7 @@ export default function ChatRoom() {
     const { isLoggedIn, token } = useUserContext();
     const { id } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { data: roomsResponse, isLoading: roomsLoading } = useChatRoomsQuery(isLoggedIn);
     const rooms = useMemo(() => roomsResponse?.data as ChatRoomType[] ?? [], [roomsResponse]);
     const selectedRoomId = Number.isFinite(Number(id)) ? Number(id) : null;
@@ -110,6 +112,13 @@ export default function ChatRoom() {
         socketRef.current = socket;
         const handleConnect = () => setIsConnected(true);
         const handleDisconnect = () => setIsConnected(false);
+        const handleReconnect = () => {
+            const roomId = activeRoomRef.current;
+            if (roomId) {
+                queryClient.invalidateQueries({ queryKey: ["chatHistory"] });
+                queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
+            }
+        };
         const handleIncoming = (payload: unknown) => {
             const message = normalizeIncomingMessage(payload);
             if (!message) return;
@@ -140,17 +149,19 @@ export default function ChatRoom() {
         };
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
+        socket.on("reconnect", handleReconnect);
         socket.on("receive_message", handleIncoming);
         socket.on("message", handleIncoming);
         return () => {
             socket.off("connect", handleConnect);
             socket.off("disconnect", handleDisconnect);
+            socket.off("reconnect", handleReconnect);
             socket.off("receive_message", handleIncoming);
             socket.off("message", handleIncoming);
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [token]);
+    }, [token, queryClient]);
 
     useEffect(() => {
         const socket = socketRef.current;

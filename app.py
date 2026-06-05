@@ -61,7 +61,7 @@ app.include_router(complaint_router)
 from routes.admin import router as admin_router
 app.include_router(admin_router)
 
-SIO_ROOM_NAMESPACE = "default"
+SIO_ROOM_NAMESPACE = None
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 
 def _coerce_room_id(value):
