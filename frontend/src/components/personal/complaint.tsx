@@ -6,7 +6,6 @@ import {
     Segmented,
     Spin,
     Tag,
-    message,
 } from "antd";
 import {
     FileTextOutlined,
@@ -19,7 +18,7 @@ import {
 import type { ComplaintRecord, ComplaintStatus, ComplaintType } from "../../../api";
 import PopWindow from "../common/PopWindow";
 import { formatDateTime } from "./contractSign";
-import ComplaintSubmissionModal from "./complaintPopWindow";
+import ComplaintPopWindow from "./complaintPopWindow";
 
 
 
@@ -51,9 +50,10 @@ type ComplaintTabValue = ComplaintStatus | "all";
 
 type ComplaintHeaderProps = {
     onCreate: () => void;
+    displayCreate: boolean;
 };
 
-function ComplaintHeader({ onCreate }: ComplaintHeaderProps) {
+function ComplaintHeader({ onCreate, displayCreate }: ComplaintHeaderProps) {
     return (
         <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -66,17 +66,19 @@ function ComplaintHeader({ onCreate }: ComplaintHeaderProps) {
                         提交投诉后管理员将进行处理，处理完成后您可以在此查看反馈结果。
                     </p>
                 </div>
-                <Button
-                    type="primary"
-                    size="large"
-                    shape="round"
-                    icon={<PlusOutlined />}
-                    className="bg-orange-500! font-semibold! shadow-none!"
-                    onClick={onCreate}
-                >
-                    提交投诉
-                </Button>
-            </div>
+                {displayCreate && (
+                    <Button
+                        type="primary"
+                        size="large"
+                        shape="round"
+                        icon={<PlusOutlined />}
+                        className="bg-orange-500! font-semibold! shadow-none!"
+                        onClick={onCreate}
+                    >
+                        提交投诉
+                    </Button>
+                )}
+                </div>
         </section>
     );
 }
@@ -260,12 +262,9 @@ export default function Complaint() {
         <div className="space-y-6">
             <ComplaintHeader
                 onCreate={() => {
-                    if (!isTenant) {
-                        message.warning("仅租客可以提交投诉");
-                        return;
-                    }
                     setSubmissionOpen(true);
                 }}
+                displayCreate={isTenant}
             />
 
             <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
@@ -318,7 +317,7 @@ export default function Complaint() {
                 ) : null}
             </section>
 
-            <ComplaintSubmissionModal
+            <ComplaintPopWindow
                 open={submissionOpen}
                 onClose={() => setSubmissionOpen(false)}
                 onCompleted={() => {

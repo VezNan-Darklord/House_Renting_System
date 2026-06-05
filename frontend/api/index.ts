@@ -24,6 +24,7 @@ export type { ConfirmContractRequest } from './models/ConfirmContractRequest';
 export type { ConfirmPaymentRequest } from './models/ConfirmPaymentRequest';
 export type { Contract } from './models/Contract';
 export type { ContractStatus } from './models/ContractStatus';
+export type { CreateChatRoomRequest } from './models/CreateChatRoomRequest';
 export type { CreateContractRequest } from './models/CreateContractRequest';
 export type { DecorationType } from './models/DecorationType';
 export type { HandleComplaintRequest } from './models/HandleComplaintRequest';

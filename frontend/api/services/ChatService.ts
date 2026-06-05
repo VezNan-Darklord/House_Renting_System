@@ -14,6 +14,19 @@ export class ChatService {
         this.httpRequest = httpRequest;
     }
     /**
+     * 获取聊天室列表
+     * @returns any 成功
+     * @throws ApiError
+     */
+    public getChatRooms(): CancelablePromise<(ApiResponse & {
+        data?: Array<ChatRoom>;
+    })> {
+        return this.httpRequest.request({
+            method: 'GET',
+            url: '/chat/rooms',
+        });
+    }
+    /**
      * 创建聊天室
      * @param requestBody
      * @returns any 成功
@@ -28,19 +41,7 @@ export class ChatService {
             method: 'POST',
             url: '/chat/rooms',
             body: requestBody,
-        });
-    }
-    /**
-     * 获取聊天室列表
-     * @returns any 成功
-     * @throws ApiError
-     */
-    public getChatRooms(): CancelablePromise<(ApiResponse & {
-        data?: Array<ChatRoom>;
-    })> {
-        return this.httpRequest.request({
-            method: 'GET',
-            url: '/chat/rooms',
+            mediaType: 'application/json',
         });
     }
     /**

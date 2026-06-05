@@ -12,6 +12,7 @@ from models.schemas import (
 from models.user_model import UserModel
 from models.complaint_model import ComplaintModel
 from models.contract_model import ContractModel
+from models.house_model import HouseModel
 from utils.auth import get_current_user, get_current_tenant, get_current_admin
 from datetime import datetime
 
@@ -25,15 +26,15 @@ def create_complaint(
         db: Session = Depends(get_db)
 ):
     """租客提交投诉"""
-    # 如果投诉类型是房东问题，必须提供 landlord_id
-    if request.type == 'landlord' and not request.landlord_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="投诉房东时必须提供房东ID"
-        )
+    resolved_landlord_id: Optional[int] = None
+    complaint_type = request.type.value
 
-    # 验证 landlord_id 是否存在且为房东角色
-    if request.landlord_id:
+    if complaint_type == 'landlord':
+        if not request.landlord_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="投诉房东时必须提供房东ID"
+            )
         landlord = db.query(UserModel).filter(
             UserModel.id == request.landlord_id,
             UserModel.role == 'landlord'
@@ -43,11 +44,29 @@ def create_complaint(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="指定的房东不存在"
             )
+        resolved_landlord_id = request.landlord_id
+
+    elif complaint_type == 'house':
+        if not request.house_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="投诉房源时必须提供房源ID"
+            )
+        house = db.query(HouseModel).filter(
+            HouseModel.id == request.house_id,
+            HouseModel.is_deleted == False
+        ).first()
+        if not house:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="指定的房源不存在"
+            )
+        resolved_landlord_id = house.landlord_id
 
     new_complaint = ComplaintModel(
         tenant_id=current_user.id,
-        landlord_id=request.landlord_id,
-        type=request.type.value,
+        landlord_id=resolved_landlord_id,
+        type=complaint_type,
         content=request.content,
         status='pending',
         admin_feedback="",

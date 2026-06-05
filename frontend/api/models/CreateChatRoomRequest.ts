@@ -12,3 +12,4 @@ export type CreateChatRoomRequest = {
      */
     landlord_id: number;
 };
+

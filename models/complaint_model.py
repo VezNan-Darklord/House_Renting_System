@@ -7,7 +7,7 @@ class ComplaintModel(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    landlord_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    landlord_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     type = Column(Enum('house', 'landlord', 'other'), nullable=False)
     content = Column(Text, nullable=False)
     status = Column(Enum('pending', 'resolved'), default='pending')

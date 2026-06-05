@@ -359,7 +359,8 @@ class ComplaintRequest(BaseModel):
     """提交投诉"""
     type: ComplaintType
     content: str = Field(min_length=1, max_length=2000)
-    landlord_id: Optional[int] = Field(None, description="被投诉的房东ID（可选）")
+    landlord_id: Optional[int] = Field(None, description="被投诉的房东ID（type=landlord 时必填）")
+    house_id: Optional[int] = Field(None, description="被投诉的房源ID（type=house 时必填，房东由房源反推）")
 
 class ComplaintRecord(BaseModel):
     """投诉记录"""

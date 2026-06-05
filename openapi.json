@@ -1667,7 +1667,9 @@
         "type": "object",
         "properties": {
           "type": { "$ref": "#/components/schemas/ComplaintType" },
-          "content": { "type": "string", "minLength": 1, "maxLength": 2000 }
+          "content": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "landlord_id": { "type": "integer", "description": "被投诉的房东ID（type=landlord 时必填）" },
+          "house_id": { "type": "integer", "description": "被投诉的房源ID（type=house 时必填，房东由房源反推）" }
         },
         "required": ["type", "content"]
       },
